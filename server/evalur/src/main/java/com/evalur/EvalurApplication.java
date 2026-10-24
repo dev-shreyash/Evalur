@@ -24,8 +24,10 @@ public class EvalurApplication {
         for (String path : searchPaths) {
             try {
                 Dotenv.configure()
+                
                         .directory(path)
                         .systemProperties() 
+                        .ignoreIfMissing()
                         .load();
                 
                 System.out.println("SUCCESS: .env loaded from relative path: " + (path.equals("./") ? "Current Directory" : path));
