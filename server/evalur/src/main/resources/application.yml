@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: evalur
+
+  main:
+    lazy-initialization: true
+
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 4
+      minimum-idle: 1
+      idle-timeout: 30000
+
+  db:
+    host: ${DB_URL_RAW:}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    show-sql: true
+    open-in-view: true
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 15
+        query:
+          plan_cache_max_size: 64
+          plan_parameter_metadata_max_size: 32
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+      file-size-threshold: 512KB
+
+server:
+  port: ${PORT:${SERVER_PORT:8081}}
+  tomcat:
+    threads:
+      max: 25
+      min-spare: 3
+
+evalur:
+  jwt:
+    secret: ${JWT_SECRET}
+    expirationMs: ${JWT_EXPIRATION_MS:86400000}
+
+  client:
+    url: ${CLIENT_URL}
+
+  ai:
+    llamaparse:
+      api-key: ${LLAMAPARSE_API_KEY}
+      base-url: ${LLAMAPARSE_API_BASE_URL:https://api.cloud.llamaindex.ai}
+
+    google-gemini:
+      api-key: ${GOOGLE_GEMINI_API_KEY}
+      base:
+        url: ${GOOGLE_GEMINI_BASE_URL}
+      model: ${GOOGLE_GEMINI_MODEL:gemini-2.5-flash}
