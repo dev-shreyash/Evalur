@@ -15,10 +15,11 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
       connection-timeout: 30000
-      maximum-pool-size: 4
-      minimum-idle: 1
-      idle-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   db:
     host: ${DB_URL_RAW:}

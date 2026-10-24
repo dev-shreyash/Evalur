@@ -26,9 +26,9 @@ EXPOSE 8080
 # -XX:+UseSerialGC           -> Low-overhead Garbage Collector
 # -XX:TieredStopAtLevel=1    -> Fast startup & lower native memory usage
 ENTRYPOINT ["java", \
-  "-Xmx260m", \
-  "-Xms128m", \
-  "-XX:MaxMetaspaceSize=100m", \
+  "-Xmx192m", \
+  "-Xms96m", \
+  "-XX:MaxMetaspaceSize=192m", \
   "-XX:ReservedCodeCacheSize=48m", \
   "-XX:MaxDirectMemorySize=32m", \
   "-Xss256k", \
