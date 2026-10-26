@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/app/providers/AuthContext";
+import { useAuth } from "@/feature/auth/hooks/useAuth";
 import { useMyAssessments } from "@/feature/dashboard/hooks/useAssessment"; //  Imported our new hook!
 
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export default function DashboardPage() {
     } else if (a.status === "IN_PROGRESS") {
       navigate(`/assessment/${a.assignmentId}`);
     } else {
-      navigate(`/assessment/result/${a.assignmentId}`);
+      navigate(`/candidate/assessment/${a.assignmentId}/result`);
     }
   };
 

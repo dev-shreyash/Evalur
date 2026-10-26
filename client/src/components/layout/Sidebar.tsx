@@ -23,7 +23,7 @@ import {
 import logo from "@/assets/logo.png"
 import { Link, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/app/providers/AuthContext"
+import { useAuth } from "@/feature/auth/hooks/useAuth"
 
 interface AppSidebarProps {
   isOpen?: boolean;

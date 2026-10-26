@@ -13,12 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import lombok.extern.slf4j.Slf4j;
 import reactor.util.retry.Retry;
 
 @Service
-@Slf4j
 public class AiGenerationService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AiGenerationService.class);
 
     private final String apiKey;
     private final String model;

@@ -12,16 +12,19 @@ import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Added for logging
 
 @Service
-@RequiredArgsConstructor
-@Slf4j // Added
 public class RetrievalService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RetrievalService.class);
 
     private final EmbeddingModel embeddingModel;
     private final EmbeddingStore<TextSegment> embeddingStore;
+
+    public RetrievalService(EmbeddingModel embeddingModel, EmbeddingStore<TextSegment> embeddingStore) {
+        this.embeddingModel = embeddingModel;
+        this.embeddingStore = embeddingStore;
+    }
 
     public String getRelevantContext(String query, Long orgId, List<String> documentIds) {
         long startTime = System.currentTimeMillis();

@@ -5,6 +5,9 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -18,16 +21,19 @@ import org.springframework.web.cors.CorsConfiguration;
 import com.evalur.security.jwtAuth.CustomAuthenticationEntryPoint;
 import com.evalur.security.jwtAuth.JwtAuthenticationFilter;
 
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomAuthenticationEntryPoint authEntryPoint;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, CustomAuthenticationEntryPoint authEntryPoint) {
+        this.jwtAuthFilter = jwtAuthFilter;
+        this.authEntryPoint = authEntryPoint;
+    }
 
     @Value("${evalur.client.url}")
     private String clientUrl;
@@ -52,15 +58,17 @@ public class SecurityConfig {
                 )
                 // 3. Define Request Rules
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/**").permitAll() // Public routes
-                .requestMatchers("/api/admin/**").hasRole("ADMIN") // Role-specific
+                // Explicit public authentication routes
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                // Explicit public documentation and system routes
                 .requestMatchers(
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
-                        "/swagger-ui.html"
-                ).permitAll()// Swagger docs should be public
-                .requestMatchers("/api/test/**").permitAll() // Allowed for testing purposes
-                .anyRequest().authenticated() // Everything else needs JWT
+                        "/swagger-ui.html",
+                        "/error"
+                ).permitAll()
+                // All other endpoints require authentication
+                .anyRequest().authenticated()
                 )
                 // 4. Add JWT Filter before the standard UsernamePassword filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -70,10 +78,19 @@ public class SecurityConfig {
 
     @Bean
     public RoleHierarchy roleHierarchy() {
+        // Organizational roles inherit managerial authority;
+        // CANDIDATE is strictly separate and not inherited by management.
         return RoleHierarchyImpl.fromHierarchy(
                 "ROLE_ADMIN > ROLE_MANAGER \n"
-                + "ROLE_MANAGER > ROLE_STAFF \n"
-                + "ROLE_STAFF > ROLE_CANDIDATE"
+                + "ROLE_MANAGER > ROLE_STAFF"
         );
+    }
+
+    @Bean
+    @SuppressWarnings("deprecation")
+    static MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
+        DefaultMethodSecurityExpressionHandler expressionHandler = new DefaultMethodSecurityExpressionHandler();
+        expressionHandler.setRoleHierarchy(roleHierarchy);
+        return expressionHandler;
     }
 }

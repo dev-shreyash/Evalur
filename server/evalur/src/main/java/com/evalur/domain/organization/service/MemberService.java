@@ -3,6 +3,7 @@ package com.evalur.domain.organization.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import com.evalur.domain.organization.dto.MemberResponse;
@@ -13,17 +14,23 @@ import com.evalur.domain.assessment.repository.UserAssessmentRepository;
 import com.evalur.domain.assessment.entity.UserAssessment;
 import com.evalur.security.utils.SecurityUtils;
 
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class MemberService {
 
     private final UserRepository userRepository;
     private final UserAssessmentRepository userAssessmentRepository;
 
+    public MemberService(UserRepository userRepository, UserAssessmentRepository userAssessmentRepository) {
+        this.userRepository = userRepository;
+        this.userAssessmentRepository = userAssessmentRepository;
+    }
+
     public List<MemberResponse> getOrganizationMembers() {
         Long orgId = SecurityUtils.getCurrentOrgId();
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
 
         return userRepository.findByOrganizationId(orgId).stream()
                 .map(user -> {
@@ -43,7 +50,6 @@ public class MemberService {
                             logicDna = ua.getEvaluation().getLogicDna();
                             aiFeedback = ua.getEvaluation().getAiLogicFeedback();
 
-                            // FIX: Safely convert the BigDecimal to a Double
                             if (ua.getEvaluation().getObjectiveScore() != null) {
                                 objScore = ua.getEvaluation().getObjectiveScore().doubleValue();
                             }

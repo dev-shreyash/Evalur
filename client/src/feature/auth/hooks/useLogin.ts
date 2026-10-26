@@ -1,32 +1,31 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { loginUser } from "../../auth/api/ApiLogin";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "@/app/providers/AuthContext";
+import { useAuth } from "@/feature/auth/hooks/useAuth";
 
 export const useLogin = () => {
   const navigate = useNavigate();
-  const { login: updateAuthContext } = useAuth();
+  const { login } = useAuth();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: loginUser,
     onSuccess: (data) => {
-      // 1. Create the user object from the flat response
       const userObj = {
-        name: data.email.split('@')[0], // Temporary: extraction from email
+        name: data.email.split('@')[0],
         email: data.email,
         role: data.role,
-        organizationName: "" // Placeholder for your research context
+        organizationName: "",
       };
 
-      // 2. Update Context and Storage
-      updateAuthContext(data.token, userObj);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(userObj));
+      // Update Redux state and localStorage
+      login(data.token, userObj);
+
+      // Invalidate existing server queries on login
+      queryClient.invalidateQueries();
 
       toast.success("Login Successful");
-      
-      // 3. Move to dashboard
       navigate("/dashboard");
     },
     onError: (error: any) => {

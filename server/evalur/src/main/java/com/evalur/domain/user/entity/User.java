@@ -106,4 +106,51 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
+    public String getSeniorityLevel() { return seniorityLevel; }
+    public void setSeniorityLevel(String seniorityLevel) { this.seniorityLevel = seniorityLevel; }
+    public Organization getOrganization() { return organization; }
+    public void setOrganization(Organization organization) { this.organization = organization; }
+
+    public static UserBuilder builder() {
+        return new UserBuilder();
+    }
+
+    public static class UserBuilder {
+        private Long id;
+        private String name;
+        private String email;
+        private String password;
+        private Role role;
+        private String seniorityLevel;
+        private Organization organization;
+
+        public UserBuilder id(Long id) { this.id = id; return this; }
+        public UserBuilder name(String name) { this.name = name; return this; }
+        public UserBuilder email(String email) { this.email = email; return this; }
+        public UserBuilder password(String password) { this.password = password; return this; }
+        public UserBuilder role(Role role) { this.role = role; return this; }
+        public UserBuilder seniorityLevel(String seniorityLevel) { this.seniorityLevel = seniorityLevel; return this; }
+        public UserBuilder organization(Organization organization) { this.organization = organization; return this; }
+
+        public User build() {
+            User user = new User();
+            user.setId(this.id);
+            user.name = this.name;
+            user.email = this.email;
+            user.password = this.password;
+            user.role = this.role;
+            user.seniorityLevel = this.seniorityLevel;
+            user.organization = this.organization;
+            return user;
+        }
+    }
 }

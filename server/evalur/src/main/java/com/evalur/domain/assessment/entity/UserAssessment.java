@@ -57,4 +57,57 @@ public class UserAssessment {
     @OneToOne(mappedBy = "userAssessment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private AssessmentEvaluation evaluation;
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public Assessment getAssessment() { return assessment; }
+    public void setAssessment(Assessment assessment) { this.assessment = assessment; }
+    public AssignmentStatus getStatus() { return status; }
+    public void setStatus(AssignmentStatus status) { this.status = status; }
+    public LocalDateTime getAssignedAt() { return assignedAt; }
+    public void setAssignedAt(LocalDateTime assignedAt) { this.assignedAt = assignedAt; }
+    public LocalDateTime getStartedAt() { return startedAt; }
+    public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public AssessmentEvaluation getEvaluation() { return evaluation; }
+    public void setEvaluation(AssessmentEvaluation evaluation) { this.evaluation = evaluation; }
+
+    public static UserAssessmentBuilder builder() {
+        return new UserAssessmentBuilder();
+    }
+
+    public static class UserAssessmentBuilder {
+        private Long id;
+        private Long userId;
+        private Assessment assessment;
+        private AssignmentStatus status;
+        private LocalDateTime assignedAt;
+        private LocalDateTime startedAt;
+        private LocalDateTime completedAt;
+        private AssessmentEvaluation evaluation;
+
+        public UserAssessmentBuilder id(Long id) { this.id = id; return this; }
+        public UserAssessmentBuilder userId(Long userId) { this.userId = userId; return this; }
+        public UserAssessmentBuilder assessment(Assessment assessment) { this.assessment = assessment; return this; }
+        public UserAssessmentBuilder status(AssignmentStatus status) { this.status = status; return this; }
+        public UserAssessmentBuilder assignedAt(LocalDateTime assignedAt) { this.assignedAt = assignedAt; return this; }
+        public UserAssessmentBuilder startedAt(LocalDateTime startedAt) { this.startedAt = startedAt; return this; }
+        public UserAssessmentBuilder completedAt(LocalDateTime completedAt) { this.completedAt = completedAt; return this; }
+        public UserAssessmentBuilder evaluation(AssessmentEvaluation evaluation) { this.evaluation = evaluation; return this; }
+
+        public UserAssessment build() {
+            UserAssessment ua = new UserAssessment();
+            ua.id = this.id;
+            ua.userId = this.userId;
+            ua.assessment = this.assessment;
+            ua.status = this.status;
+            ua.assignedAt = this.assignedAt;
+            ua.startedAt = this.startedAt;
+            ua.completedAt = this.completedAt;
+            ua.evaluation = this.evaluation;
+            return ua;
+        }
+    }
 }

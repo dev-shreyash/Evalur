@@ -11,14 +11,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.evalur.domain.organization.dto.MemberResponse;
 import com.evalur.domain.organization.service.MemberService;
 
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/org") 
-@RequiredArgsConstructor
 public class MemberController {
 
     private final MemberService memberService;
+
+    public MemberController(MemberService memberService) {
+        this.memberService = memberService;
+    }
 
     /**
      * GET /api/v1/org/members

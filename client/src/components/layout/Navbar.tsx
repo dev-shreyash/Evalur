@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate } from "react-router-dom"
-import { useAuth } from "@/app/providers/AuthContext"
+import { useAuth } from "@/feature/auth/hooks/useAuth"
 import { toast } from "sonner"
 
 interface NavbarProps {

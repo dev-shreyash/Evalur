@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -26,13 +28,11 @@ import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class AiDocumentService {
+
+    private static final Logger log = LoggerFactory.getLogger(AiDocumentService.class);
 
     @Value("${evalur.ai.llamaparse.api-key}")
     private String llamaApiKey;
@@ -44,6 +44,15 @@ public class AiDocumentService {
     private final EmbeddingModel embeddingModel;
     private final EmbeddingStore<TextSegment> embeddingStore;
     private final RestTemplate restTemplate = new RestTemplate();
+
+    public AiDocumentService(
+            AiDocumentRepository aiDocumentRepository,
+            EmbeddingModel embeddingModel,
+            EmbeddingStore<TextSegment> embeddingStore) {
+        this.aiDocumentRepository = aiDocumentRepository;
+        this.embeddingModel = embeddingModel;
+        this.embeddingStore = embeddingStore;
+    }
 
     /**
      * Entry point for the background ingestion pipeline.

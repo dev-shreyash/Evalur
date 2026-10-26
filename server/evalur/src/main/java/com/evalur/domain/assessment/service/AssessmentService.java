@@ -1,9 +1,11 @@
 package com.evalur.domain.assessment.service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,19 +15,57 @@ import com.evalur.domain.ai.service.AiGenerationService;
 import com.evalur.domain.ai.service.RetrievalService;
 import com.evalur.domain.assessment.entity.Assessment;
 import com.evalur.domain.assessment.repository.AssessmentRepository;
+import com.evalur.exceptions.ResourceNotFoundException;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class AssessmentService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AssessmentService.class);
 
     private final AssessmentRepository assessmentRepository;
     private final RetrievalService retrievalService;
     private final AiDocumentRepository aiDocumentRepository; 
     private final AiGenerationService aiGenerationService;
+
+    public AssessmentService(
+            AssessmentRepository assessmentRepository,
+            RetrievalService retrievalService,
+            AiDocumentRepository aiDocumentRepository,
+            AiGenerationService aiGenerationService) {
+        this.assessmentRepository = assessmentRepository;
+        this.retrievalService = retrievalService;
+        this.aiDocumentRepository = aiDocumentRepository;
+        this.aiGenerationService = aiGenerationService;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AiDocument> validateDocumentsForOrganization(List<String> documentIds, Long organizationId) {
+        if (organizationId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+        if (documentIds == null || documentIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> longIds = documentIds.stream()
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+
+        List<AiDocument> documents = aiDocumentRepository.findAllById(longIds);
+
+        if (documents.size() != longIds.size()) {
+            throw new ResourceNotFoundException("AiDocument", "ids", documentIds);
+        }
+
+        for (AiDocument doc : documents) {
+            if (doc.getOrganization() == null || !doc.getOrganization().getId().equals(organizationId)) {
+                throw new AccessDeniedException("Document " + doc.getId() + " does not belong to user's organization.");
+            }
+        }
+
+        return documents;
+    }
 
     @Async("taskExecutor")
     @Transactional // 2. Added Transactional to ensure the join table update commits
@@ -82,6 +122,7 @@ public class AssessmentService {
             assessmentRepository.save(assessment);
         }
     }
+
     @Transactional
     public void saveResults(Long id, String content) {
         Assessment assessment = assessmentRepository.findById(id)

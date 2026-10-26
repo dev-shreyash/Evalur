@@ -88,7 +88,7 @@ export default function AssessmentResultPage() {
             {result.objectiveScore || 0}%
           </div>
           <p className="text-xs text-slate-500 mt-4 text-center px-4">
-            Based on MCQ accuracy and functional requirements
+            Historical scores may include a legacy code-length heuristic and may not be directly comparable with scores calculated under the current scoring formula.
           </p>
         </Card>
 

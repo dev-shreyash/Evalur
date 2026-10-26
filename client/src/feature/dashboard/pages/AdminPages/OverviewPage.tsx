@@ -32,7 +32,7 @@ import {
   AreaChart, 
   Area 
 } from "recharts";
-import { useAuth } from "@/app/providers/AuthContext";
+import { useAuth } from "@/feature/auth/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 export default function OverviewPage() {

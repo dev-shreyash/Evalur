@@ -1,8 +1,18 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/app/providers/AuthContext";
+import { useAuth } from "@/feature/auth/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 export default function RoleRedirect() {
-  const { user } = useAuth();
+  const { user, isLoading, isInitialized } = useAuth();
+
+  // Wait for verified session before making role-based redirect decisions
+  if (isLoading || !isInitialized) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+      </div>
+    );
+  }
 
   if (!user) return <Navigate to="/auth/login" replace />;
 

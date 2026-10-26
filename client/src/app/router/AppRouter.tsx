@@ -12,7 +12,7 @@ import CandidatesPage from '@/feature/dashboard/pages/AdminPages/CandidatesPage'
 import SettingsPage from '@/feature/dashboard/pages/AdminPages/SettingsPage';
 
 import AssessmentPlayer from '@/feature/dashboard/pages/candidatePages/AssessmentPlayer';
-// import AssessmentResult from '@/feature/dashboard/pages/candidatePages/AssessmentResult';
+import AssessmentResult from '@/feature/dashboard/pages/candidatePages/AssessmentResult';
 
 import UnauthorizedPage from '@/common/pages/UnauthorizedPage';
 import RoleRedirect from './RoleRedirect';
@@ -68,7 +68,8 @@ export const AppRouter = () => {
       <Route element={<ProtectedRoute allowedRoles={["CANDIDATE"]} />}>
         <Route element={<MainLayout />}>
           <Route path="/candidate" element={<DashboardPage />} />
-          {/* <Route path="/assessment/result/:id" element={<AssessmentResult />} /> */}
+          <Route path="/candidate/assessment/:assignmentId/result" element={<AssessmentResult />} />
+          <Route path="/assessment/result/:assignmentId" element={<AssessmentResult />} />
         </Route>
       </Route>
 

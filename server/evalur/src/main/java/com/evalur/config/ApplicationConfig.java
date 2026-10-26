@@ -11,14 +11,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.evalur.domain.user.repository.UserRepository;
 
-import lombok.RequiredArgsConstructor;
 
 @Configuration
-@RequiredArgsConstructor
 public class ApplicationConfig {
 
     // Injecting UserRepository to fetch user details for authentication
     private final UserRepository userRepository;
+
+    public ApplicationConfig(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

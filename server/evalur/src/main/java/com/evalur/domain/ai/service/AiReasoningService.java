@@ -14,11 +14,11 @@ import com.evalur.domain.assessment.repository.AssessmentEvaluationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.extern.slf4j.Slf4j;
 
 @Service
-@Slf4j
 public class AiReasoningService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AiReasoningService.class);
 
     private final String apiKey;
     private final String model;
@@ -87,7 +87,17 @@ public class AiReasoningService {
             });
 
         } catch (Exception e) {
-            log.error("AI Parsing failed: {}", e.getMessage());
+            log.error("AI logic analysis failed for Evaluation ID: {}", context.getEvaluationId(), e);
+            try {
+                evaluationRepository.findById(context.getEvaluationId()).ifPresent(eval -> {
+                    eval.setEvaluationStatus(EvaluationStatus.FAILED);
+                    eval.setAiLogicFeedback("Automated code analysis could not be completed. Please contact your instructor or administrator.");
+                    evaluationRepository.save(eval);
+                    log.info("Persisted FAILED evaluation status for Evaluation ID: {}", context.getEvaluationId());
+                });
+            } catch (Exception ex) {
+                log.error("Failed to update evaluation status to FAILED for ID: {}", context.getEvaluationId(), ex);
+            }
         }
     }
 

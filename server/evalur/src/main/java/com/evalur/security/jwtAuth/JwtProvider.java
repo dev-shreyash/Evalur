@@ -89,12 +89,15 @@ public class JwtProvider {
     // B2B SAAS LOGIC (Multi-Tenancy)
     // ========================================================================
 
-    public String generateInviteToken(Long orgId, String orgName, String role, String seniority) {
+    public String generateInviteToken(Long orgId, String orgName, String role, String seniority, String email) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("orgId", orgId);
         claims.put("orgName", orgName);
         claims.put("role", role);
         claims.put("seniority", seniority);
+        if (email != null && !email.isBlank()) {
+            claims.put("email", email.trim().toLowerCase());
+        }
         
         return Jwts.builder()
                 .setClaims(claims)
@@ -104,6 +107,21 @@ public class JwtProvider {
                 .setExpiration(new Date(System.currentTimeMillis() + 604800000)) 
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String generateInviteToken(Long orgId, String orgName, String role, String seniority) {
+        return generateInviteToken(orgId, orgName, role, seniority, null);
+    }
+
+    public boolean validateInviteToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            boolean isInviteSubject = "INVITATION_TOKEN".equals(claims.getSubject());
+            boolean notExpired = claims.getExpiration() != null && !claims.getExpiration().before(new Date());
+            return isInviteSubject && notExpired;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public Long extractOrgId(String token) {
@@ -118,6 +136,10 @@ public class JwtProvider {
     }
 
     public String extractSeniority(String token) {
-    return extractClaim(token, claims -> claims.get("seniority", String.class));
-}
+        return extractClaim(token, claims -> claims.get("seniority", String.class));
+    }
+
+    public String extractInviteEmail(String token) {
+        return extractClaim(token, claims -> claims.get("email", String.class));
+    }
 }
