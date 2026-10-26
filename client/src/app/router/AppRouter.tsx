@@ -25,11 +25,11 @@ export const AppRouter = () => {
 
       {/* PUBLIC ROUTES (Only accessible if NOT logged in) */}
       <Route element={<PublicRoute />}>
+        <Route path='/' element={<HomePage />} />
         <Route element={<AuthLayout />}>
-          <Route path='/' element={<HomePage />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
-           <Route path="/auth/register/join" element={<RegisterPage />} />
+          <Route path="/auth/register/join" element={<RegisterPage />} />
         </Route>
       </Route>
 

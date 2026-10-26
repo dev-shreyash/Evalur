@@ -9,14 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import api from "@/api/axios"; // Assuming you have an axios instance with base URL
+import api from "@/api/axios";
 
-import { Upload, Trash2, Settings, Palette, FileText, Shield, Users, AlertTriangle, Globe, Phone, Building2 } from "lucide-react";
+import { Settings, FileText, Shield, Globe, Phone, Building2, Loader2, Save } from "lucide-react";
 
-// ================= SCHEMA (Matched to Postman Payload) =================
 const schema = z.object({
   name: z.string().min(2, "Organization name is required"),
   industry: z.string().min(2, "Industry is required"),
@@ -53,22 +54,19 @@ export default function SettingsPage() {
   const watchSignup = watch("allowSignup");
   const watchInvite = watch("inviteOnly");
 
-  // ================= 1. FETCH PROFILE DATA =================
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        // Updated to your GET endpoint
         const res = await api.get("/org/profile");
         const data = res.data.data;
         reset(data);
         if (data.logoUrl) setLogoPreview(data.logoUrl);
       } catch (error) {
-        toast.error("Using default settings (Server unreachable)");
         reset({
-          name: "Evalur Corp",
-          industry: "Technology",
+          name: "Evalur Organization",
+          industry: "Technology & Education",
           website: "https://evalur.io",
-          contactPhone: "+91 9876543210",
+          contactPhone: "+1 555-0199",
           mcqDuration: "30",
           codingDuration: "45",
           passingScore: "60",
@@ -80,11 +78,9 @@ export default function SettingsPage() {
     fetchSettings();
   }, [reset]);
 
-  // ================= 2. SUBMIT CHANGES =================
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      // Updated to your PATCH endpoint using raw JSON
       const res = await api.patch("/org/profile", {
         name: data.name,
         industry: data.industry,
@@ -94,20 +90,18 @@ export default function SettingsPage() {
       });
 
       if (res.status === 200) {
-        toast.success("Organization profile updated!");
+        toast.success("Organization profile updated successfully");
       }
     } catch (error) {
-      toast.error("Failed to update profile");
+      toast.error("Failed to update organization profile");
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= 3. UI HANDLERS =================
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real scenario, upload file to S3/Cloudinary first, then set URL
       const fakeUrl = URL.createObjectURL(file);
       setLogoPreview(fakeUrl);
       setValue("logoUrl", fakeUrl);
@@ -115,85 +109,102 @@ export default function SettingsPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end border-b pb-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight italic uppercase">Settings</h1>
-          <p className="text-gray-500 mt-2">Configure your Evalur organization profile</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h1>
+          <p className="text-sm text-slate-500 mt-1">Configure your organization profile, assessment defaults, and access policies.</p>
         </div>
-        <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 h-12 px-8 rounded-xl font-bold">
-          {loading ? <Loader2 className="animate-spin mr-2" /> : "Save Changes"}
+        <Button 
+          type="submit" 
+          disabled={loading} 
+          size="sm"
+          className="h-9 px-4 rounded-md bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-medium"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin mr-1.5 h-3.5 w-3.5" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-1.5 h-3.5 w-3.5" />
+              Save Changes
+            </>
+          )}
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-gray-100 p-1 rounded-2xl mb-8">
-          <TabsTrigger value="general" className="rounded-xl px-6 font-bold tracking-widest uppercase text-[10px]">
-            <Settings className="h-4 w-4 mr-2" /> General
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+        <TabsList className="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+          <TabsTrigger value="general" className="text-xs font-medium px-4 py-1.5 rounded-md data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs">
+            <Settings className="h-3.5 w-3.5 mr-1.5" /> General
           </TabsTrigger>
-          <TabsTrigger value="assessment" className="rounded-xl px-6 font-bold tracking-widest uppercase text-[10px]">
-            <FileText className="h-4 w-4 mr-2" /> Assessment
+          <TabsTrigger value="assessment" className="text-xs font-medium px-4 py-1.5 rounded-md data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs">
+            <FileText className="h-3.5 w-3.5 mr-1.5" /> Assessment Defaults
           </TabsTrigger>
-          <TabsTrigger value="security" className="rounded-xl px-6 font-bold tracking-widest uppercase text-[10px]">
-            <Shield className="h-4 w-4 mr-2" /> Security
+          <TabsTrigger value="security" className="text-xs font-medium px-4 py-1.5 rounded-md data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs">
+            <Shield className="h-3.5 w-3.5 mr-1.5" /> Security & Access
           </TabsTrigger>
         </TabsList>
 
-        {/* GENERAL TAB - Linked to Postman Schema */}
+        {/* GENERAL TAB */}
         <TabsContent value="general" className="space-y-6">
-          <Card className="border-none shadow-xl shadow-gray-200/50 rounded-[2rem] overflow-hidden">
-            <CardHeader className="bg-gray-50/50 p-8 border-b">
-              <CardTitle className="text-xl font-black italic uppercase">Organization Profile</CardTitle>
+          <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 overflow-hidden">
+            <CardHeader className="bg-slate-50/70 dark:bg-slate-950/60 p-5 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">Organization Profile</CardTitle>
+              <CardDescription className="text-xs text-slate-500">Public profile and organization contact details.</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-gray-400">Company Name</Label>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Organization Name</Label>
                   <div className="relative">
-                    <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input {...register("name")} className="pl-10 h-12 bg-white" />
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <Input {...register("name")} className="pl-9 h-9 text-xs" />
                   </div>
                   {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-gray-400">Industry</Label>
-                  <Input {...register("industry")} className="h-12 bg-white" placeholder="e.g. Technology" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Industry / Domain</Label>
+                  <Input {...register("industry")} className="h-9 text-xs" placeholder="e.g. Technology / Higher Education" />
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-gray-400">Website</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Website</Label>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input {...register("website")} className="pl-10 h-12 bg-white" />
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <Input {...register("website")} className="pl-9 h-9 text-xs" />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-gray-400">Contact Phone</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Contact Phone</Label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input {...register("contactPhone")} className="pl-10 h-12 bg-white" />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <Input {...register("contactPhone")} className="pl-9 h-9 text-xs" />
                   </div>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-slate-100 dark:bg-slate-800" />
 
-              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20 border-4 border-white shadow-xl">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-14 w-14 border border-slate-200 dark:border-slate-700">
                   {logoPreview ? (
                     <img src={logoPreview} alt="Preview" className="object-cover" />
                   ) : (
-                    <AvatarFallback className="bg-blue-600 text-white font-black">EV</AvatarFallback>
+                    <AvatarFallback className="bg-slate-900 text-white font-bold text-sm">EV</AvatarFallback>
                   )}
                 </Avatar>
-                <div className="space-y-2">
-                  <Button type="button" variant="outline" onClick={() => document.getElementById('logo-up')?.click()}>
+                <div className="space-y-1">
+                  <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('logo-up')?.click()} className="text-xs h-8">
                     Change Logo
                   </Button>
                   <input id="logo-up" type="file" hidden onChange={handleLogoUpload} accept="image/*" />
-                  <p className="text-xs text-gray-400 italic">Square PNG or JPG preferred.</p>
+                  <p className="text-[11px] text-slate-400">Square PNG or JPG recommended.</p>
                 </div>
               </div>
             </CardContent>
@@ -202,20 +213,24 @@ export default function SettingsPage() {
 
         {/* ASSESSMENT TAB */}
         <TabsContent value="assessment">
-          <Card className="border-none shadow-xl rounded-[2rem]">
-            <CardContent className="p-8 space-y-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-gray-400">MCQ Time (Mins)</Label>
-                  <Input type="number" {...register("mcqDuration")} className="h-12" />
+          <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+            <CardHeader className="bg-slate-50/70 dark:bg-slate-950/60 p-5 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">Default Assessment Parameters</CardTitle>
+              <CardDescription className="text-xs text-slate-500">Set default timeouts and minimum benchmark scores.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid md:grid-cols-3 gap-5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">MCQ Section Duration (Mins)</Label>
+                  <Input type="number" {...register("mcqDuration")} className="h-9 text-xs" />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-gray-400">Coding Time (Mins)</Label>
-                  <Input type="number" {...register("codingDuration")} className="h-12" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Coding Section Duration (Mins)</Label>
+                  <Input type="number" {...register("codingDuration")} className="h-9 text-xs" />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-gray-400">Passing Score (%)</Label>
-                  <Input type="number" {...register("passingScore")} className="h-12" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Passing Benchmark (%)</Label>
+                  <Input type="number" {...register("passingScore")} className="h-9 text-xs" />
                 </div>
               </div>
             </CardContent>
@@ -224,20 +239,24 @@ export default function SettingsPage() {
 
         {/* SECURITY TAB */}
         <TabsContent value="security">
-          <Card className="border-none shadow-xl rounded-[2rem]">
-            <CardContent className="p-8 space-y-6">
-              <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl">
-                <div className="space-y-1">
-                  <p className="font-bold text-gray-900">Invite-Only Access</p>
-                  <p className="text-sm text-gray-500 italic">Only users with an invitation token can join.</p>
+          <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+            <CardHeader className="bg-slate-50/70 dark:bg-slate-950/60 p-5 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">Access Policies</CardTitle>
+              <CardDescription className="text-xs text-slate-500">Configure registration policies and tenant boundaries.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-lg">
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">Invite-Only Access</p>
+                  <p className="text-[11px] text-slate-500">Only candidates and participants with an explicit invitation link can register.</p>
                 </div>
                 <Switch checked={watchInvite} onCheckedChange={(v) => setValue("inviteOnly", v)} />
               </div>
 
-              <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl">
-                <div className="space-y-1">
-                  <p className="font-bold text-gray-900">Public Signup</p>
-                  <p className="text-sm text-gray-500 italic">Allow anyone with the link to register.</p>
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-lg">
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">Public Self-Registration</p>
+                  <p className="text-[11px] text-slate-500">Allow users to register freely without an invitation token.</p>
                 </div>
                 <Switch checked={watchSignup} onCheckedChange={(v) => setValue("allowSignup", v)} />
               </div>
@@ -248,19 +267,3 @@ export default function SettingsPage() {
     </form>
   );
 }
-
-const Loader2 = ({ className }: { className?: string }) => (
-  <div className={`animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full ${className}`} />
-);
-
-const Separator = () => <div className="h-[1px] bg-gray-100 w-full" />;
-
-const Avatar = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={`rounded-full overflow-hidden flex items-center justify-center bg-gray-100 ${className}`}>
-    {children}
-  </div>
-);
-
-const AvatarFallback = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={`h-full w-full flex items-center justify-center ${className}`}>{children}</div>
-);

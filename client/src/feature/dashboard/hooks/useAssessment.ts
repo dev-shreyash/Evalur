@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import type { 
   AssessmentRequest, 
   AssignmentRequest,
-  SubmissionRequest //  Added this import
+  SubmissionRequest,
+  CreateCohortRequest,
+  AssignCohortRequest
 } from "@/feature/dashboard/api/assessmentApi"; 
 
 import { candidateApi } from "../api/candidateApi";
@@ -76,6 +78,24 @@ export const useCompleteAssessment = (id: string) => {
   });
 };
 
+// Fetch topics from selected documents for assessment generation
+export const useDocumentTopics = (documentIds: string[]) => {
+  return useQuery({
+    queryKey: ["doc-topics", documentIds],
+    queryFn: () => assessmentService.getDocumentTopics(documentIds),
+    enabled: documentIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Fetch cohorts for the organization
+export const useCohorts = () => {
+  return useQuery({
+    queryKey: ["cohorts"],
+    queryFn: assessmentService.getCohorts,
+  });
+};
+
 /** 
  * MUTATIONS (Actions)
  */
@@ -124,6 +144,38 @@ export const useUploadDocument = () => {
     },
     onError: () => {
       toast.error("Failed to ingest document. Ensure it's a valid PDF/Text file.");
+    },
+  });
+};
+
+// Cohort mutations
+export const useCreateCohort = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateCohortRequest) => assessmentService.createCohort(payload),
+    onSuccess: () => {
+      toast.success("Cohort created successfully!");
+      queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || "Failed to create cohort.");
+    },
+  });
+};
+
+export const useAssignCandidatesToCohort = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: AssignCohortRequest) => assessmentService.assignCandidatesToCohort(payload),
+    onSuccess: () => {
+      toast.success("Candidates assigned to cohort!");
+      queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || "Failed to assign candidates to cohort.");
     },
   });
 };

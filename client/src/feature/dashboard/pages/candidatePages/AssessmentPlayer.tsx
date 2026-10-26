@@ -223,26 +223,26 @@ export default function AssessmentPlayer() {
   // RENDER: PRE-FLIGHT SCREEN
   if (!hasStarted) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
-        <Card className="max-w-xl w-full bg-slate-800 border-slate-700 text-white shadow-2xl">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
+        <Card className="max-w-xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl">
           <CardContent className="p-8 space-y-6">
-            <div className="flex items-center gap-3 text-red-400 mb-6">
-              <ShieldAlert className="w-8 h-8" />
-              <h1 className="text-2xl font-bold">Secure Assessment Environment</h1>
+            <div className="flex items-center gap-3 text-slate-900 dark:text-slate-100 mb-2">
+              <ShieldAlert className="w-6 h-6 text-blue-600" />
+              <h1 className="text-xl font-bold">Secure Assessment Environment</h1>
             </div>
             
-            <p className="text-slate-300">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               You are about to begin your technical evaluation. 
-              Total time allocated: <span className="text-white font-bold">{formatTime(timeLeft)}</span>.
+              Total time allocated: <span className="font-semibold text-slate-900 dark:text-slate-100">{formatTime(timeLeft)}</span>.
             </p>
 
-            <ul className="space-y-4 text-sm text-slate-400">
-              <li className="flex gap-3 text-orange-300"><Zap className="w-5 h-5 shrink-0" /> Each question has an individual time limit.</li>
-              <li className="flex gap-3"><Lock className="w-5 h-5 text-slate-500 shrink-0" /> Full-screen mode is recommended.</li>
-              <li className="flex gap-3"><AlertTriangle className="w-5 h-5 text-red-400 shrink-0" /> <span className="text-red-400 font-semibold">Exiting full-screen, switching tabs, or minimizing the window will automatically submit your test.</span></li>
+            <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
+              <li className="flex gap-2.5 items-center"><Zap className="w-4 h-4 text-amber-500 shrink-0" /> Questions have individual time allocations.</li>
+              <li className="flex gap-2.5 items-center"><Lock className="w-4 h-4 text-slate-400 shrink-0" /> Full-screen mode is recommended for focus.</li>
+              <li className="flex gap-2.5 items-center text-red-600 dark:text-red-400"><AlertTriangle className="w-4 h-4 shrink-0" /> <span>Switching tabs or minimizing the window will trigger automated submission.</span></li>
             </ul>
 
-            <Button onClick={handleStart} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold mt-4">
+            <Button onClick={handleStart} className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-semibold mt-4">
               Begin Assessment
             </Button>
           </CardContent>

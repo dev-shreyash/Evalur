@@ -1,57 +1,98 @@
-/*  ALL IMPORTS FIRST */
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/public-sans";
+@import "@fontsource-variable/geist-mono";
 
-/*  THEN TAILWIND */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/*  THEN YOUR CUSTOM CSS */
-:root{
-  --bs-blue: #0d6efd;
-  --bs-indigo: #6610f2;
-  --bs-purple: #6f42c1;
-  --bs-pink: #d63384;
-  --bs-red: #dc3545;
-  --bs-orange: #fd7e14;
-  --bs-yellow: #ffc107;
-  --bs-green: #198754;
-  --bs-teal: #20c997;
-  --bs-cyan: #0dcaf0;
-  --bs-black: #000;
-  --bs-white: #fff;
-}
-
-/* KEEP YOUR EXISTING LAYERS BELOW */
-
-@layer base {
-  body {
-    @apply dark:bg-slate-100 ;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  }
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Base Font Family */
+    --font-sans: 'Public Sans Variable', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Light Mode Tokens (Refined B2B SaaS Palette) */
+    --background: 210 20% 98%;           /* #f8fafc slate-50 */
+    --foreground: 222.2 47.4% 11.2%;       /* #0f172a slate-900 */
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --card: 0 0% 100%;                   /* #ffffff pure white */
+    --card-foreground: 222.2 47.4% 11.2%; /* #0f172a */
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --popover: 0 0% 100%;                /* #ffffff */
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    --primary: 222.2 47.4% 11.2%;        /* #0f172a */
+    --primary-foreground: 210 40% 98%;   /* #f8fafc */
+
+    --secondary: 210 40% 96.1%;          /* #f1f5f9 slate-100 */
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;              /* #f1f5f9 */
+    --muted-foreground: 215.4 16.3% 46.9%; /* #64748b slate-500 */
+
+    --accent: 210 40% 96.1%;             /* #f1f5f9 */
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;         /* #e2e8f0 slate-200 */
+    --input: 214.3 31.8% 91.4%;          /* #e2e8f0 */
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
   }
 
-   
+  .dark {
+    /* Dark Mode Tokens */
+    --background: 222.2 84% 4.9%;        /* #020617 slate-950 */
+    --foreground: 210 40% 98%;           /* #f8fafc slate-50 */
+
+    --card: 222.2 47.4% 11.2%;           /* #0f172a slate-900 */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 47.4% 11.2%;        /* #0f172a */
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;              /* #f8fafc */
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;      /* #1e293b slate-800 */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%; /* #94a3b8 slate-400 */
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;         /* #1e293b */
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+
+  * {
+    @apply border-border;
+  }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Ensure radx popper / popover / select content is properly elevated with solid background */
+  [data-radix-popper-content-wrapper] {
+    z-index: 100 !important;
   }
 }

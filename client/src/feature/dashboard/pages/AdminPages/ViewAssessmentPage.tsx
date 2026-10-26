@@ -14,10 +14,10 @@ import {
   HelpCircle, 
   Code2, 
   Clock, 
-  BrainCircuit, 
   CheckCircle2,
   Trophy,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +28,20 @@ export default function ViewAssessmentPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] w-full gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-slate-900 opacity-20" />
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Processing Protocol...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] w-full gap-3 text-slate-400">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
+        <p className="text-xs font-medium">Loading assessment details...</p>
+      </div>
+    );
+  }
+
+  if (!assessment) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center space-y-4">
+        <p className="text-sm font-semibold text-slate-800">Assessment not found</p>
+        <Button variant="outline" size="sm" onClick={() => navigate("/admin/assessments")}>
+          Return to Assessments
+        </Button>
       </div>
     );
   }
@@ -38,205 +49,187 @@ export default function ViewAssessmentPage() {
   const { mcqs = [], codingTasks = [] } = assessment?.content || {};
 
   return (
-    /* 
-       FLEX FIX: Ensure the main container is a flex column 
-       to prevent any horizontal squashing.
-    */
-    <div className="flex flex-col w-full max-w-7xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Navigation Header */}
-      <div className="flex flex-row items-center justify-between w-full">
+      <div className="flex items-center justify-between">
         <Button 
           variant="ghost" 
+          size="sm"
           onClick={() => navigate(-1)} 
-          className="group rounded-xl hover:bg-slate-100 font-bold border-2 border-transparent hover:border-slate-200 transition-all"
+          className="text-xs font-medium text-slate-600 hover:text-slate-900 -ml-2"
         >
-          <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" /> 
-          Back to Dashboard
+          <ChevronLeft className="h-4 w-4 mr-1" /> 
+          Back to Assessments
         </Button>
-        <div className="flex flex-row items-center gap-4">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol ID: {id}</span>
-            <Badge className="bg-green-50 text-green-700 border-2 border-green-100 px-4 py-1 rounded-lg uppercase text-[9px] font-black tracking-tighter">
-                {assessment.status}
-            </Badge>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-mono text-slate-400">Assessment ID: #{id}</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            {assessment.status || "Ready"}
+          </span>
         </div>
       </div>
 
-      {/* Hero Section */}
-      <Card className="w-full rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden bg-white">
-        <CardContent className="p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-            <div className="flex flex-col space-y-3">
-              <h1 className="text-4xl font-black tracking-tighter text-slate-900 leading-none">
-                {assessment.title}
-              </h1>
-              <div className="flex flex-row items-center gap-4">
-                  <Badge variant="secondary" className="rounded-lg px-3 py-1 font-black text-[10px] uppercase tracking-widest bg-slate-100 text-slate-600 border-none">
-                      {assessment.role}
-                  </Badge>
-                  <Separator orientation="vertical" className="h-4 bg-slate-200" />
-                  <div className="flex flex-row items-center gap-2 text-slate-500 text-sm font-bold">
-                      <Trophy className="h-4 w-4 text-amber-500" />
-                      {assessment.seniority} Difficulty
-                  </div>
-              </div>
+      {/* Hero Header Card */}
+      <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+        <CardContent className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+              {assessment.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {assessment.role || "Technical Evaluation"}
+              </span>
+              <span>•</span>
+              <span>{assessment.seniority || "Standard"} Level</span>
+              <span>•</span>
+              <span>Created {assessment.createdAt ? new Date(assessment.createdAt).toLocaleDateString() : "Active"}</span>
             </div>
-            <div className="bg-slate-900 p-6 rounded-xl flex flex-col items-center justify-center shrink-0 min-w-[140px] shadow-xl">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Items</span>
-                <span className="text-3xl font-black text-white tracking-tighter mt-1">
-                  {mcqs.length + codingTasks.length}
-                </span>
+          </div>
+          <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/60 px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
+            <div className="text-right">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">Total Items</span>
+              <span className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100">
+                {mcqs.length + codingTasks.length}
+              </span>
             </div>
+            <div className="text-xs text-slate-400 pl-2 border-l border-slate-200 dark:border-slate-700">
+              <p>{mcqs.length} MCQs</p>
+              <p>{codingTasks.length} Coding</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* 
-          TABS FLEX FIX: 
-          Forcing the Tabs component to be a flex container with 100% width.
-      */}
-      <div className="flex flex-col w-full items-stretch"> 
-        <Tabs defaultValue="mcqs" className="w-full flex flex-col space-y-8">
-          <div className="flex flex-row justify-start">
-            <TabsList className="flex flex-row h-14 bg-slate-100 rounded-xl p-1 border-2 border-slate-200">
-              <TabsTrigger value="mcqs" className="rounded-lg px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">
-                <HelpCircle className="h-4 w-4 mr-2" /> Objective MCQs
-              </TabsTrigger>
-              <TabsTrigger value="coding" className="rounded-lg px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">
-                <Code2 className="h-4 w-4 mr-2" /> Algorithmic Tasks
-              </TabsTrigger>
-            </TabsList>
-          </div>
+      {/* Questions Tabs */}
+      <Tabs defaultValue="mcqs" className="w-full space-y-6">
+        <TabsList className="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+          <TabsTrigger value="mcqs" className="text-xs font-medium px-4 py-1.5 rounded-md data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs">
+            <HelpCircle className="h-3.5 w-3.5 mr-1.5" />
+            Multiple-Choice Questions ({mcqs.length})
+          </TabsTrigger>
+          <TabsTrigger value="coding" className="text-xs font-medium px-4 py-1.5 rounded-md data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs">
+            <Code2 className="h-3.5 w-3.5 mr-1.5" />
+            Practical Coding Tasks ({codingTasks.length})
+          </TabsTrigger>
+        </TabsList>
 
-          {/* MCQs Section */}
-          <TabsContent value="mcqs" className="flex flex-col w-full space-y-6 m-0 p-0 outline-none border-none">
-            {mcqs.map((q: any, idx: number) => (
-              <Card key={idx} className="flex flex-col w-full border-2 border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
-                <CardHeader className="bg-slate-50/50 border-b-2 p-8 flex flex-col">
-                  <div className="flex flex-row justify-between items-start gap-4">
-                    <div className="flex flex-row gap-5">
-                      <div className="flex items-center justify-center h-12 w-12 shrink-0 rounded-xl bg-slate-900 text-white font-black text-lg shadow-lg">
-                        {idx + 1}
-                      </div>
-                      <div className="flex flex-col">
-                          <CardTitle className="text-xl font-bold text-slate-900 leading-snug">{q.question}</CardTitle>
-                          <div className="mt-3 flex flex-row items-center gap-4">
-                              <span className="flex flex-row items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                  <Clock className="h-3 w-3" /> ~{q.timeEstimateMinutes} MINS
-                              </span>
-                              <Badge className="bg-white border-2 border-slate-200 text-slate-500 font-black text-[9px] uppercase px-2 py-0">
-                                  {q.difficulty}
-                              </Badge>
-                          </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-8 flex flex-col">
-                  {/* Grid of options - using flex wrap for responsiveness */}
-                  <div className="flex flex-wrap md:flex-row gap-4 w-full">
-                    {q.options.map((opt: string, i: number) => (
-                      <div 
-                        key={i} 
-                        className={cn(
-                          "relative p-5 rounded-xl border-2 transition-all duration-200 flex flex-row items-center justify-between",
-                          "w-full md:w-[calc(50%-0.5rem)]", // Flexbox equivalent of grid-cols-2
-                          i === q.correctOptionIndex 
-                            ? "border-green-500 bg-green-50/30 text-green-900 ring-2 ring-green-500/10" 
-                            : "border-slate-100 bg-white text-slate-600"
-                        )}
-                      >
-                        <span className="font-bold text-sm pr-4">{opt}</span>
-                        <div className="flex items-center">
-                          {i === q.correctOptionIndex ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                          ) : (
-                              <div className="h-5 w-5 rounded-full border-2 border-slate-100 shrink-0" />
-                          )}
-                        </div>
-                        {i === q.correctOptionIndex && (
-                            <div className="absolute -top-3 right-4 bg-green-600 text-[8px] text-white font-black px-2 py-0.5 rounded uppercase tracking-[0.1em] shadow-sm">KEY SOLUTION</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter className="px-8 pb-8 pt-0 flex">
-                  <div className="w-full p-6 bg-slate-50 rounded-xl border-2 border-slate-100 flex flex-col">
-                    <div className="flex flex-row items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                      <BrainCircuit className="h-4 w-4 text-slate-900" /> AI Pedagogical Logic
-                    </div>
-                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                        {q.explanation}
-                    </p>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </TabsContent>
-
-          {/* Coding Section */}
-          <TabsContent value="coding" className="flex flex-col w-full space-y-10 m-0 p-0 outline-none border-none">
-            {codingTasks.map((task: any, idx: number) => (
-              <Card key={idx} className="flex flex-col w-full border-2 border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
-                <div className="bg-slate-900 p-10 text-white relative flex flex-col">
-                  <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-                      <Code2 className="h-40 w-40" />
-                  </div>
-                  <div className="relative z-10 flex flex-col space-y-6">
-                    <div className="flex flex-row items-center gap-3">
-                        <div className="h-1 bg-slate-500 w-12 rounded-full" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 text-xs">ALGORITHMIC TASK {idx + 1}</span>
-                    </div>
-                    <div className="flex flex-row justify-between items-start gap-4">
-                      <div className="flex flex-col space-y-2">
-                          <h3 className="text-3xl font-black tracking-tighter leading-none">{task.title}</h3>
-                          <p className="text-slate-400 leading-relaxed max-w-4xl text-lg font-medium">{task.description}</p>
-                      </div>
-                      <Badge className="bg-slate-800 text-slate-300 border-none rounded-lg px-4 py-1.5 font-bold uppercase tracking-widest text-[10px] shrink-0">
-                          {task.difficulty}
-                      </Badge>
-                    </div>
+        {/* MCQs Content */}
+        <TabsContent value="mcqs" className="space-y-4">
+          {mcqs.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-400 border border-dashed rounded-xl">
+              No multiple-choice questions configured in this assessment.
+            </div>
+          ) : mcqs.map((mcq: any, idx: number) => (
+            <Card key={idx} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+              <CardHeader className="bg-slate-50/70 dark:bg-slate-950/60 p-4 border-b border-slate-100 dark:border-slate-800 flex flex-row items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="font-mono text-xs font-bold text-slate-500 bg-slate-200 dark:bg-slate-800 h-6 w-6 rounded flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug">
+                      {mcq.question}
+                    </h3>
                   </div>
                 </div>
+                {mcq.timeEstimateMinutes && (
+                  <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                    {mcq.timeEstimateMinutes} min
+                  </span>
+                )}
+              </CardHeader>
+              <CardContent className="p-4 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {mcq.options?.map((opt: string, optIdx: number) => {
+                    const isCorrect = optIdx === mcq.correctAnswer;
+                    return (
+                      <div 
+                        key={optIdx} 
+                        className={cn(
+                          "p-3 rounded-lg border text-xs font-medium transition-colors flex items-center justify-between",
+                          isCorrect 
+                            ? "bg-emerald-50/70 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200" 
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] font-bold text-slate-400">
+                            {String.fromCharCode(65 + optIdx)}.
+                          </span>
+                          <span>{opt}</span>
+                        </div>
+                        {isCorrect && (
+                          <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                            Correct
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+              {mcq.explanation && (
+                <CardFooter className="bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 px-4 py-2.5 text-xs text-slate-600 dark:text-slate-400">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 mr-1.5">Explanation:</span> {mcq.explanation}
+                </CardFooter>
+              )}
+            </Card>
+          ))}
+        </TabsContent>
 
-                <CardContent className="p-10 flex flex-col space-y-10">
-                  <div className="flex flex-col space-y-4">
-                    <div className="flex flex-row items-center gap-2 text-amber-600 font-black text-[10px] uppercase tracking-widest">
-                        <AlertCircle className="h-4 w-4" /> Technical Constraints
-                    </div>
-                    <div className="p-6 bg-amber-50/30 rounded-xl border-2 border-amber-100 font-bold text-amber-900 text-sm leading-relaxed whitespace-pre-wrap">
-                      {task.constraints}
+        {/* Coding Tasks Content */}
+        <TabsContent value="coding" className="space-y-6">
+          {codingTasks.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-400 border border-dashed rounded-xl">
+              No coding tasks configured in this assessment.
+            </div>
+          ) : codingTasks.map((task: any, idx: number) => (
+            <Card key={idx} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+              <CardHeader className="bg-slate-50/70 dark:bg-slate-950/60 p-5 border-b border-slate-200 dark:border-slate-800 flex flex-row items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Coding Challenge {idx + 1}
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      {task.difficulty || "Standard"}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    {task.title}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                    {task.description}
+                  </p>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-5 space-y-4">
+                {task.constraints && (
+                  <div className="p-3.5 bg-amber-50/60 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200">
+                    <span className="font-semibold flex items-center gap-1.5 mb-1 text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                      <AlertCircle className="h-3.5 w-3.5" /> Technical Constraints
+                    </span>
+                    <p className="leading-relaxed whitespace-pre-wrap">{task.constraints}</p>
+                  </div>
+                )}
+
+                {task.initialCode && (
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Starter Code Template
+                    </span>
+                    <div className="rounded-lg border border-slate-800 bg-slate-950 p-4 text-xs font-mono text-slate-200 overflow-x-auto">
+                      <pre className="leading-relaxed">{task.initialCode}</pre>
                     </div>
                   </div>
-
-                  <div className="flex flex-col lg:flex-row gap-8">
-                    <div className="flex flex-col flex-1 space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Starter Template</Label>
-                      <ScrollArea className="h-[400px] w-full rounded-xl border-2 border-slate-100 bg-slate-900 p-6 shadow-inner">
-                        <pre className="text-xs text-slate-300 font-mono leading-relaxed">
-                          {task.initialCode}
-                        </pre>
-                      </ScrollArea>
-                    </div>
-
-                    <div className="flex flex-col flex-1 space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-green-600 ml-1">Optimized Reference</Label>
-                      <ScrollArea className="h-[400px] w-full rounded-xl border-2 border-green-100 bg-[#0d1117] p-6 shadow-inner">
-                        <pre className="text-xs text-green-400 font-mono leading-relaxed">
-                          {task.solutionTemplate}
-                        </pre>
-                      </ScrollArea>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-        </Tabs>
-      </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
-
-function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <span className={cn("block mb-2 font-bold", className)}>{children}</span>;
 }

@@ -138,6 +138,17 @@ public class AiDocumentService {
     private void processAndStore(String markdown, AiDocument aiDoc) {
         Document document = Document.from(markdown);
 
+        // Extract topics from markdown headings
+        List<String> topics = extractTopicsFromMarkdown(markdown);
+        if (!topics.isEmpty()) {
+            try {
+                aiDoc.setExtractedTopics(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(topics));
+                aiDocumentRepository.save(aiDoc);
+            } catch (Exception e) {
+                log.warn("Could not serialize extracted topics: {}", e.getMessage());
+            }
+        }
+
         // 1. Generate raw segments
         List<TextSegment> rawSegments = DocumentSplitters.recursive(1000, 100).split(document);
 
@@ -180,4 +191,21 @@ public class AiDocumentService {
         doc.setStatus(status);
         aiDocumentRepository.save(doc);
     }
+
+    private List<String> extractTopicsFromMarkdown(String markdown) {
+        if (markdown == null || markdown.isBlank()) return List.of();
+        List<String> topics = new java.util.ArrayList<>();
+        for (String line : markdown.split("\\R")) {
+            line = line.trim();
+            if (line.startsWith("#")) {
+                String clean = line.replaceFirst("^#+\s*", "").replaceAll("^[0-9]+[.\s]+", "").trim();
+                if (clean.length() >= 3 && clean.length() <= 80 && !topics.contains(clean)) {
+                    topics.add(clean);
+                }
+            }
+            if (topics.size() >= 25) break;
+        }
+        return topics;
+    }
+
 }

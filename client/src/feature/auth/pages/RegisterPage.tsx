@@ -1,35 +1,37 @@
-"use client";
-
-import { useEffect, useState, useMemo } from "react";
-import { useRegister } from "../../auth/hooks/useRegister";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema } from "../schema/registerSchema";
-import type { RegisterFormData } from '../schema/registerSchema';
-
-// shadcn/ui components
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useRegister } from "../hooks/useRegister";
+import { registerSchema, type RegisterFormData } from "../schema/registerSchema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
+import { CheckCircle2, ShieldCheck } from "lucide-react";
 
 export default function RegisterPage() {
-  const { mutate, isPending } = useRegister();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-
+  const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get("token");
-  const decoded = useMemo(() => {
-    if (inviteToken) {
-      try {
-        const payload = JSON.parse(atob(inviteToken.split(".")[1]));
-        return payload;
-      } catch (err) {
-        console.error("Invalid invitation token", err);
-        return null;
-      }
+  const isInvite = Boolean(inviteToken);
+
+  const getDecodedPayload = () => {
+    if (!inviteToken) return null;
+    try {
+      const base64Url = inviteToken.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(jsonPayload);
+    } catch {
+      return null;
     }
-    return null;
-  }, [inviteToken]);
+  };
+
+  const decoded = getDecodedPayload();
 
   const {
     register,
@@ -39,20 +41,20 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: "",
-      email: "",
+      email: decoded?.sub || decoded?.email || "",
       password: "",
-      organizationName: "",
-      inviteToken: inviteToken || null,
+      orgName: decoded?.orgName || "",
+      role: decoded?.role || "ADMIN",
     },
   });
 
-  const isInvite = Boolean(inviteToken);
+  const { mutate, isPending } = useRegister();
 
   const onSubmit: SubmitHandler<RegisterFormData> = (data) => {
     mutate(
       {
         ...data,
-        seniorityLevel: decoded?.seniority || "JUNIOR",
+        seniorityLevel: decoded?.seniority || "STANDARD",
         inviteToken: inviteToken || null,
       },
       {
@@ -64,102 +66,113 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 bg-gradient-radial text-slate-800 font-sans rounded-2xl overflow-hidden shadow-lg">
-      
-      {/* BRANDING SIDE - Matching Login Page */}
-      <div className="hidden md:flex flex-col justify-center px-16  text-white">
-        <span className="text-5xl font-bold mb-6 tracking-tight">
-          {isInvite && decoded ? decoded.orgName : "Evalur"}
-        </span>
-        <p className="text-slate-400 text-xl max-w-lg leading-relaxed">
-          {isInvite
-            ? "Your assessment environment is ready. Finish your profile to begin."
-            : "Access your adaptive skill verification environment and manage organizational hiring context."}
-        </p>
+    <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+      {/* BRANDING PANEL */}
+      <div className="hidden md:flex flex-col justify-between p-10 bg-slate-900 text-white">
+        <div>
+          <div className="flex items-center gap-3">
+            <img src={logo} className="w-9 h-9 rounded-lg object-contain bg-white/10 p-1" alt="Evalur Logo" />
+            <span className="text-2xl font-bold tracking-tight text-white">Evalur</span>
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-white mt-8 leading-snug">
+            {isInvite && decoded?.orgName
+              ? `Join ${decoded.orgName} on Evalur.`
+              : "Technical skills evaluation for education and industry."}
+          </h2>
+          <p className="text-slate-400 text-sm mt-3 leading-relaxed">
+            {isInvite
+              ? "Your technical assessment portal is ready. Complete your profile registration to access your assessments."
+              : "Create an organization workspace to create course assessments, job-role benchmarks, and evaluate candidates."}
+          </p>
+        </div>
+
+        <div className="space-y-3 pt-8 border-t border-slate-800">
+          
+          <div className="flex items-center gap-2.5 text-xs text-slate-300">
+            <span>Copyright © {new Date().getFullYear()} Evalur. All rights reserved.</span>
+          </div>
+        </div>
       </div>
 
-      {/* REGISTRATION FORM SIDE */}
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-md  bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <div>
-            <h2 className="text-3xl font-bold">
-              {isInvite ? "Welcome" : "Get Started"}
-            </h2>
-            <p className="text-slate-500 mt-2">
-              {isInvite 
-                ? "Fill in your details to join the organization." 
-                : "Create your admin account to register your organization."}
-            </p>
+      {/* REGISTRATION FORM PANEL */}
+      <div className="flex flex-col justify-center p-8 sm:p-10 bg-white">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {isInvite ? "Complete Registration" : "Create Account"}
+          </h1>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1.5">
+            {isInvite
+              ? "Fill in your profile details to accept your invitation."
+              : "Set up your admin profile to begin creating evaluations."}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-6">
+          {/* FULL NAME */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">Full Name</label>
+            <Input 
+              {...register("name")} 
+              placeholder="e.g. Alex Morgan" 
+              className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            
-            {/* FULL NAME */}
-            <div className="mt-0">
-              <label className="text-sm font-semibold text-slate-700">Full Name</label>
-              <Input 
-                {...register("name")} 
-                placeholder="eg. Shreyash Bhosale" 
-                className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
-              />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-            </div>
-
-            {/* EMAIL */}
-            <div className="mt-0">
-              <label className="text-sm font-semibold text-slate-700">Email Address</label>
-              <Input 
-                type="email" 
-                {...register("email")} 
-                placeholder="name@example.com"
-                className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-              />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-            </div>
-
-            {/* PASSWORD */}
-            <div className="mt-0">
-              <label className="text-sm font-semibold text-slate-700">Password</label>
-              <Input 
-                type="password" 
-                {...register("password")} 
-                placeholder="••••••••"
-                className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
-              />
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-            </div>
-
-            {/* ORGANIZATION NAME (Only for new registrations) */}
-            {!isInvite && (
-              <div className="mt-0">
-                <label className="text-sm font-semibold text-slate-700">Organization Name</label>
-                <Input 
-                  {...register("organizationName")} 
-                  placeholder="Evalur Corp"
-                  className={errors.organizationName ? "border-red-500 focus-visible:ring-red-500" : ""}
-                />
-                {errors.organizationName && <p className="text-red-500 text-xs mt-1">{errors.organizationName.message}</p>}
-              </div>
-            )}
-
-            <Button 
-              type="submit" 
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white h-11" 
-              disabled={isPending}
-            >
-              {isPending ? "Setting up..." : isInvite ? "Join Team" : "Register Organization"}
-            </Button>
-          </form>
-
-          {/* LOGIN REDIRECTION FOR EXISTING USERS */}
-          <div className="text-center">
-            <p className="text-sm text-slate-600">
-              Already have an account?{" "}
-              <Link to="/auth/login" className="font-semibold text-slate-900 hover:underline">
-                Sign in to your dashboard
-              </Link>
-            </p>
+          {/* EMAIL */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">Email Address</label>
+            <Input 
+              type="email" 
+              {...register("email")} 
+              placeholder="name@organization.com"
+              disabled={isInvite && Boolean(decoded?.sub || decoded?.email)}
+              className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
           </div>
+
+          {/* ORGANIZATION (if not invite) */}
+          {!isInvite && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">Organization or Institution</label>
+              <Input 
+                {...register("orgName")} 
+                placeholder="e.g. Acme Tech / University Dept"
+                className={errors.orgName ? "border-red-500 focus-visible:ring-red-500" : ""}
+              />
+              {errors.orgName && <p className="text-red-500 text-xs">{errors.orgName.message}</p>}
+            </div>
+          )}
+
+          {/* PASSWORD */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">Password</label>
+            <Input 
+              type="password" 
+              {...register("password")} 
+              placeholder="••••••••"
+              className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs h-10 shadow-sm mt-2" 
+            disabled={isPending}
+          >
+            {isPending ? "Creating account..." : isInvite ? "Join Organization" : "Create Organization Account"}
+          </Button>
+        </form>
+
+        <div className="text-center mt-6 pt-5 border-t border-slate-100">
+          <p className="text-xs text-slate-600">
+            Already have an account?{" "}
+            <Link to="/auth/login" className="font-semibold text-slate-900 hover:underline">
+              Sign In
+            </Link>
+          </p>
         </div>
       </div>
     </div>

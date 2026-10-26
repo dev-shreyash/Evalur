@@ -14,6 +14,7 @@ import com.evalur.domain.ai.repository.AiDocumentRepository;
 import com.evalur.domain.ai.service.AiGenerationService;
 import com.evalur.domain.ai.service.RetrievalService;
 import com.evalur.domain.assessment.entity.Assessment;
+import com.evalur.domain.assessment.dto.AssessmentRequest;
 import com.evalur.domain.assessment.repository.AssessmentRepository;
 import com.evalur.exceptions.ResourceNotFoundException;
 
@@ -67,16 +68,59 @@ public class AssessmentService {
         return documents;
     }
 
+    @Transactional
+    public List<String> extractTopics(List<String> documentIds, Long organizationId) {
+        List<AiDocument> documents = validateDocumentsForOrganization(documentIds, organizationId);
+        java.util.Set<String> allTopics = new java.util.LinkedHashSet<>();
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+        for (AiDocument doc : documents) {
+            boolean hasStoredTopics = false;
+            if (doc.getExtractedTopics() != null && !doc.getExtractedTopics().isBlank()) {
+                try {
+                    List<String> parsed = mapper.readValue(doc.getExtractedTopics(), new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+                    if (parsed != null && !parsed.isEmpty()) {
+                        allTopics.addAll(parsed);
+                        hasStoredTopics = true;
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to parse cached topics for doc {}: {}", doc.getId(), e.getMessage());
+                }
+            }
+
+            if (!hasStoredTopics) {
+                try {
+                    String context = retrievalService.getRelevantContext(
+                            doc.getFilename(),
+                            organizationId,
+                            List.of(doc.getId().toString())
+                    );
+                    if (context != null && !context.isBlank()) {
+                        List<String> aiTopics = aiGenerationService.extractTopicsFromText(context);
+                        if (!aiTopics.isEmpty()) {
+                            allTopics.addAll(aiTopics);
+                            doc.setExtractedTopics(mapper.writeValueAsString(aiTopics));
+                            aiDocumentRepository.save(doc);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not extract topics for document {}: {}", doc.getId(), e.getMessage());
+                }
+            }
+        }
+
+        return new java.util.ArrayList<>(allTopics);
+    }
+
     @Async("taskExecutor")
-    @Transactional // 2. Added Transactional to ensure the join table update commits
-    public void runGenerationPipeline(Long assessmentId, List<String> documentIds, String jobDescription) {
+    @Transactional
+    public void runGenerationPipeline(Long assessmentId, List<String> documentIds, AssessmentRequest request) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new RuntimeException("Assessment not found for ID: " + assessmentId));
 
         try {
             log.info("Starting generation for Assessment ID: {}", assessmentId);
 
-            // 3. Convert String IDs to Long and Link the entities to populate assessments_documents
             if (documentIds != null && !documentIds.isEmpty()) {
                 List<Long> longIds = documentIds.stream()
                         .map(Long::valueOf)
@@ -84,34 +128,49 @@ public class AssessmentService {
                 
                 List<AiDocument> documents = aiDocumentRepository.findAllById(longIds);
                 assessment.setDocuments(documents); 
-                
                 log.info("Linked {} documents to Assessment {}", documents.size(), assessmentId);
             }
 
-            // 1. Get Context from PDFs for Gemini
+            String retrievalQuery;
+            if (request != null && request.topics() != null && !request.topics().isEmpty()) {
+                retrievalQuery = String.join(", ", request.topics());
+            } else {
+                retrievalQuery = (assessment.getRole() != null ? assessment.getRole() : "") + " " + 
+                                 (assessment.getSeniority() != null ? assessment.getSeniority() : "");
+            }
+
             String pdfContext = "";
             if (documentIds != null && !documentIds.isEmpty()) {
                 pdfContext = retrievalService.getRelevantContext(
-                        assessment.getRole() + " " + assessment.getSeniority(),
+                        retrievalQuery.trim(),
                         assessment.getOrganization().getId(),
                         documentIds
                 );
             }
 
-            // 2. Generate JSON via Gemini
-            String jsonContent = aiGenerationService.generateAssessmentJson(
-                    assessment.getRole(),
-                    assessment.getSeniority(),
-                    pdfContext,
-                    jobDescription,
-                    0 
-            );
+            String jsonContent;
+            if (request != null && request.topics() != null && !request.topics().isEmpty()) {
+                jsonContent = aiGenerationService.generateCourseAssessmentJson(
+                        assessment.getTitle(),
+                        request.topics(),
+                        request.assessmentFocus(),
+                        request.questionTypes(),
+                        request.questionCount(),
+                        pdfContext,
+                        0
+                );
+            } else {
+                jsonContent = aiGenerationService.generateAssessmentJson(
+                        assessment.getRole(),
+                        assessment.getSeniority(),
+                        pdfContext,
+                        request != null ? request.jobDescription() : null,
+                        0 
+                );
+            }
 
-            // 3. Update and Save
             assessment.setContent(jsonContent);
             assessment.setStatus(Assessment.AssessmentStatus.READY);
-            
-            // This save now includes the document relationship!
             assessmentRepository.save(assessment);
             
             log.info("Assessment {} successfully marked as READY with document links.", assessmentId);
@@ -121,6 +180,12 @@ public class AssessmentService {
             assessment.setStatus(Assessment.AssessmentStatus.FAILED);
             assessmentRepository.save(assessment);
         }
+    }
+
+    @Async("taskExecutor")
+    @Transactional
+    public void runGenerationPipeline(Long assessmentId, List<String> documentIds, String jobDescription) {
+        runGenerationPipeline(assessmentId, documentIds, new AssessmentRequest(null, null, null, documentIds, jobDescription));
     }
 
     @Transactional

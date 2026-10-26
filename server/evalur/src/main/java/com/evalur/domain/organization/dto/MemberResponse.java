@@ -10,5 +10,17 @@ public record MemberResponse(
     String email,
     Role role,
     String seniorityLevel,
-    List<CandidateAssessmentDto> userAssessments 
-) {}
+    List<CandidateAssessmentDto> userAssessments,
+    Long cohortId,
+    String cohortName
+) {
+    public MemberResponse(
+            Long id,
+            String name,
+            String email,
+            Role role,
+            String seniorityLevel,
+            List<CandidateAssessmentDto> userAssessments) {
+        this(id, name, email, role, seniorityLevel, userAssessments, null, null);
+    }
+}

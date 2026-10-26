@@ -18,6 +18,7 @@ import com.evalur.domain.assessment.repository.AssessmentRepository;
 import com.evalur.domain.assessment.repository.UserAssessmentRepository;
 import com.evalur.domain.user.entity.Role;
 import com.evalur.domain.user.entity.User;
+import com.evalur.domain.organization.repository.CohortRepository;
 import com.evalur.domain.user.repository.UserRepository;
 import com.evalur.exceptions.ResourceNotFoundException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,26 +35,37 @@ public class UserAssessmentService {
     private final UserRepository userRepository;
     private final AssessmentEvaluationRepository evaluationRepository;
     private final ObjectMapper objectMapper;
+    private final CohortRepository cohortRepository;
 
-   
+    public UserAssessmentService(
+            UserAssessmentRepository userAssessmentRepository,
+            AssessmentRepository assessmentRepository,
+            UserRepository userRepository,
+            AssessmentEvaluationRepository evaluationRepository,
+            ObjectMapper objectMapper,
+            CohortRepository cohortRepository) {
+        this.userAssessmentRepository = userAssessmentRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.userRepository = userRepository;
+        this.evaluationRepository = evaluationRepository;
+        this.objectMapper = objectMapper;
+        this.cohortRepository = cohortRepository;
+    }
+
     public UserAssessmentService(
             UserAssessmentRepository userAssessmentRepository,
             AssessmentRepository assessmentRepository,
             UserRepository userRepository,
             AssessmentEvaluationRepository evaluationRepository,
             ObjectMapper objectMapper) {
-        this.userAssessmentRepository = userAssessmentRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.userRepository = userRepository;
-        this.evaluationRepository = evaluationRepository;
-        this.objectMapper = objectMapper;
+        this(userAssessmentRepository, assessmentRepository, userRepository, evaluationRepository, objectMapper, null);
     }
 
     public UserAssessmentService(
             UserAssessmentRepository userAssessmentRepository,
             AssessmentRepository assessmentRepository,
             ObjectMapper objectMapper) {
-        this(userAssessmentRepository, assessmentRepository, null, null, objectMapper);
+        this(userAssessmentRepository, assessmentRepository, null, null, objectMapper, null);
     }
 
     @Transactional
@@ -69,12 +81,30 @@ public class UserAssessmentService {
             throw new AccessDeniedException("Organization does not own this assessment.");
         }
 
-        if (request.candidateIds() == null || request.candidateIds().isEmpty()) {
+        java.util.Set<Long> targetCandidateIds = new java.util.LinkedHashSet<>();
+        if (request.candidateIds() != null) {
+            targetCandidateIds.addAll(request.candidateIds());
+        }
+
+        if (request.cohortId() != null) {
+            if (cohortRepository != null) {
+                cohortRepository.findByIdAndOrganizationId(request.cohortId(), callerOrgId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Cohort", "id", request.cohortId()));
+                List<User> cohortCandidates = userRepository.findByOrganizationIdAndCohortId(callerOrgId, request.cohortId());
+                for (User u : cohortCandidates) {
+                    if (u.getRole() == Role.CANDIDATE) {
+                        targetCandidateIds.add(u.getId());
+                    }
+                }
+            }
+        }
+
+        if (targetCandidateIds.isEmpty()) {
             return;
         }
 
         // Validate all target candidates belong to callerOrgId and have Role.CANDIDATE
-        for (Long candidateId : request.candidateIds()) {
+        for (Long candidateId : targetCandidateIds) {
             User candidate = userRepository.findById(candidateId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", candidateId));
 
@@ -88,7 +118,7 @@ public class UserAssessmentService {
         }
 
         // Complete request is valid - create assignments for candidates not yet assigned
-        List<UserAssessment> assignments = request.candidateIds().stream()
+        List<UserAssessment> assignments = targetCandidateIds.stream()
                 .filter(uid -> !userAssessmentRepository.existsByUserIdAndAssessmentId(uid, request.assessmentId()))
                 .map(uid -> UserAssessment.builder()
                         .userId(uid)

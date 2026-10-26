@@ -75,13 +75,18 @@ public class MemberService {
                     }).collect(Collectors.toList());
 
                     // 5. Return the parent Member Record
+                    Long cohortId = user.getCohort() != null ? user.getCohort().getId() : null;
+                    String cohortName = user.getCohort() != null ? user.getCohort().getName() : null;
+
                     return new MemberResponse(
                             user.getId(),
                             user.getName(),
                             user.getEmail(),
                             user.getRole(),
                             user.getSeniorityLevel(),
-                            assessmentDtos);
+                            assessmentDtos,
+                            cohortId,
+                            cohortName);
                 })
                 .collect(Collectors.toList());
     }

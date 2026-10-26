@@ -1,6 +1,5 @@
 package com.evalur.domain.user.repository;
 
-
 import java.util.List;
 import java.util.Optional;
 
@@ -13,4 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     List<User> findByOrganizationId(Long organizationId);
+    List<User> findByOrganizationIdAndCohortId(Long organizationId, Long cohortId);
+    List<User> findByOrganizationIdAndCohortIsNull(Long organizationId);
+    int countByCohortId(Long cohortId);
 }

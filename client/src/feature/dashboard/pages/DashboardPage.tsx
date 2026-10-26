@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/feature/auth/hooks/useAuth";
-import { useMyAssessments } from "@/feature/dashboard/hooks/useAssessment"; //  Imported our new hook!
+import { useMyAssessments } from "@/feature/dashboard/hooks/useAssessment";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, FileText, CheckCircle2, Clock, Calendar, ArrowRight, Briefcase, Users, Database } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type UserRole = "ADMIN" | "MANAGER" | "STAFF" | "CANDIDATE";
 
@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
   const role = user?.role?.toUpperCase() as UserRole | undefined;
 
-  //  1. Use React Query to fetch the candidate's tasks
+  // React Query to fetch the candidate's tasks
   const { 
     data: assessments = [], 
     isLoading, 
@@ -30,149 +30,225 @@ export default function DashboardPage() {
 
   if (!role) {
     return (
-      <div className="flex justify-center items-center h-full p-6 text-slate-500 animate-pulse">
-        Loading Dashboard...
+      <div className="flex justify-center items-center h-full min-h-[60vh] p-6 text-slate-400 text-xs gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
+        <span>Loading session...</span>
       </div>
     );
   }
 
   const isAdmin = role === "ADMIN";
   const isManager = role === "MANAGER";
-  const isStaff = role === "STAFF";
   const isCandidate = role === "CANDIDATE";
 
-  //  2. Clean Routing Action
+  // Routing Action for Candidate
   const handleAction = (a: any) => {
-    if (a.status === "PENDING" || a.status === "ASSIGNED") {
-      navigate(`/assessment/${a.assignmentId}`);
-    } else if (a.status === "IN_PROGRESS") {
+    if (a.status === "PENDING" || a.status === "ASSIGNED" || a.status === "IN_PROGRESS") {
       navigate(`/assessment/${a.assignmentId}`);
     } else {
       navigate(`/candidate/assessment/${a.assignmentId}/result`);
     }
   };
 
-  const stats = {
-    totalAssessments: assessments.length,
-    activeCandidates: 0,
-    pendingAssessments: assessments.filter((a: any) => a.status === 'ASSIGNED' || a.status === 'PENDING').length,
-    completedAssessments: assessments.filter((a: any) => a.status === 'COMPLETED' || a.status === 'SUBMITTED').length,
-    averageScore: 0,
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="container mx-auto p-6 animate-in fade-in duration-500">
-
-        {/* HEADER */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-            {isAdmin ? "Organization Dashboard" : isManager ? "Manager Dashboard" : isStaff ? "Staff Dashboard" : "Candidate Dashboard"}
-          </h2>
-          <p className="text-slate-500 mt-1 text-lg">
-            {isAdmin ? "Manage company knowledge, create assessments, and evaluate candidates" : isManager ? "Track your team's assessment progress" : isStaff ? "Manage internal tasks" : "View your assigned assessments"}
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              {isAdmin 
+                ? "Organization Workspace" 
+                : isManager 
+                ? "Evaluations & Candidate Workspace" 
+                : "My Assessments"}
+            </h1>
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+              {role.toLowerCase()}
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            {isAdmin 
+              ? "Create technical assessments, manage cohorts, and evaluate candidate results." 
+              : isManager 
+              ? "Track candidate progress and review skill evaluations across groups." 
+              : "Review and complete your technical assessments and skills evaluations."}
           </p>
         </div>
+      </div>
 
-        {/* ADMIN VIEW */}
-        {isAdmin && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-             {/* Admin metrics omitted for brevity, keeping existing UI structure */}
-          </div>
-        )}
+      {/* Candidate View */}
+      {isCandidate && (
+        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 overflow-hidden">
+          <CardHeader className="p-5 bg-slate-50/70 dark:bg-slate-950/60 border-b border-slate-100 dark:border-slate-800">
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-slate-600" />
+              Assigned Assessments ({assessments.length})
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              Technical evaluations and competency benchmarks assigned to you.
+            </CardDescription>
+          </CardHeader>
 
-        {/* CANDIDATE VIEW */}
-        {isCandidate && (
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-4 border-b border-slate-100">
-              <CardTitle className="text-xl text-slate-900">My Assessments</CardTitle>
-              <CardDescription>
-                Complete your assigned technical evaluations
-              </CardDescription>
-            </CardHeader>
+          <CardContent className="p-0">
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center p-12 text-slate-400 gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-slate-600" />
+                <p className="text-xs">Loading assigned assessments...</p>
+              </div>
+            )}
 
-            <CardContent className="space-y-4 pt-6">
+            {/* Error State */}
+            {isError && (
+              <div className="flex flex-col items-center justify-center p-8 text-red-600 gap-2">
+                <AlertTriangle className="w-6 h-6" />
+                <p className="text-xs font-medium">Failed to load assessments. Please refresh your browser.</p>
+              </div>
+            )}
 
-              {/* Loading State */}
-              {isLoading && (
-                <div className="flex flex-col items-center justify-center p-12 text-slate-500">
-                  <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-600" />
-                  <p>Loading your tasks...</p>
-                </div>
-              )}
+            {/* Empty State */}
+            {!isLoading && !isError && assessments.length === 0 && (
+              <div className="p-12 text-center text-slate-400 text-xs">
+                No active assessment tasks assigned at this time.
+              </div>
+            )}
 
-              {/* Error State */}
-              {isError && (
-                <div className="flex flex-col items-center justify-center p-12 text-red-500 bg-red-50 rounded-xl border border-red-100">
-                  <AlertTriangle className="w-8 h-8 mb-2" />
-                  <p>Failed to load assessments. Please refresh the page.</p>
-                </div>
-              )}
+            {/* Tasks List */}
+            {!isLoading && !isError && assessments.length > 0 && (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {assessments.map((a: any) => {
+                  const isReadyToStart = a.status === "PENDING" || a.status === "ASSIGNED";
+                  const isInProgress = a.status === "IN_PROGRESS";
+                  const isSubmitted = a.status === "SUBMITTED";
+                  const isCompleted = a.status === "COMPLETED";
 
-              {/* Empty State */}
-              {!isLoading && !isError && assessments.length === 0 && (
-                <div className="p-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <p className="text-slate-500 font-medium">
-                    You have no active assessment tasks at this time.
-                  </p>
-                </div>
-              )}
+                  return (
+                    <div
+                      key={a.assignmentId}
+                      className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
+                    >
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] text-slate-400 px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            #{a.assignmentId}
+                          </span>
+                          <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                            {a.title || a.assessmentTitle}
+                          </h3>
+                        </div>
 
-              {/* Tasks List */}
-              {!isLoading && !isError && assessments.map((a: any) => (
-                <div
-                  key={a.assignmentId}
-                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 border border-slate-200 rounded-xl hover:border-blue-200 hover:bg-blue-50/50 transition-all gap-4"
-                >
-                  <div className="space-y-1">
-                    <p className="font-bold text-slate-900 text-lg">{a.title || a.assessmentTitle}</p>
-                    
-                    <div className="flex items-center gap-3 mt-2">
-                      {(a.status === "PENDING" || a.status === "ASSIGNED") && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
-                          Pending
-                        </span>
-                      )}
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                          {isReadyToStart && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                              Assigned
+                            </span>
+                          )}
 
-                      {a.status === "IN_PROGRESS" && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
-                          In Progress
-                        </span>
-                      )}
+                          {isInProgress && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                              In Progress
+                            </span>
+                          )}
 
-                      {(a.status === "COMPLETED" || a.status === "SUBMITTED") && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
-                          {a.status === "SUBMITTED" ? "Under Review" : "Completed"}
-                        </span>
-                      )}
+                          {isSubmitted && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                              Under Review
+                            </span>
+                          )}
 
-                      <span className="text-xs text-slate-500 font-medium">
-                        Assigned: {new Date(a.assignedAt).toLocaleDateString()}
-                      </span>
+                          {isCompleted && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Completed
+                            </span>
+                          )}
+
+                          <span className="flex items-center">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {a.assignedAt ? new Date(a.assignedAt).toLocaleDateString() : "Assigned"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        className={cn(
+                          "h-8 px-4 rounded-md text-xs font-medium shrink-0",
+                          isReadyToStart || isInProgress
+                            ? "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900"
+                            : "border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                        )}
+                        onClick={() => handleAction(a)}
+                      >
+                        {isReadyToStart ? (
+                          <>
+                            Start Assessment
+                            <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                          </>
+                        ) : isInProgress ? (
+                          <>
+                            Resume Assessment
+                            <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                          </>
+                        ) : (
+                          "View Results"
+                        )}
+                      </Button>
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-                  <Button
-                    className={`w-full sm:w-auto font-bold shadow-sm transition-all ${
-                      (a.status === "PENDING" || a.status === "ASSIGNED" || a.status === "IN_PROGRESS")
-                        ? "bg-slate-900 text-white hover:bg-slate-800"
-                        : "border-slate-200 text-slate-700 hover:bg-slate-50"
-                    }`}
-                    onClick={() => handleAction(a)}
-                  >
-                    {(a.status === "PENDING" || a.status === "ASSIGNED")
-                      ? "Start Test"
-                      : a.status === "IN_PROGRESS"
-                      ? "Resume"
-                      : "View Results(Disabled)"}
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
+      {/* Admin / Manager Quick Cards */}
+      {(isAdmin || isManager) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card 
+            onClick={() => navigate("/admin/assessments")}
+            className="p-5 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-slate-300 cursor-pointer transition-all bg-white dark:bg-slate-900 shadow-xs group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                <FileText className="h-4 w-4" />
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+            <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mt-3">Assessments</h3>
+            <p className="text-xs text-slate-500 mt-1">Configure and assign course or role-based evaluations.</p>
           </Card>
-        )}
 
-      </main>
+          <Card 
+            onClick={() => navigate("/admin/candidates")}
+            className="p-5 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-slate-300 cursor-pointer transition-all bg-white dark:bg-slate-900 shadow-xs group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                <Users className="h-4 w-4" />
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+            <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mt-3">Candidates & Cohorts</h3>
+            <p className="text-xs text-slate-500 mt-1">Manage candidate rosters, cohorts, and invitations.</p>
+          </Card>
+
+          <Card 
+            onClick={() => navigate("/admin/knowledge")}
+            className="p-5 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-slate-300 cursor-pointer transition-all bg-white dark:bg-slate-900 shadow-xs group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                <Database className="h-4 w-4" />
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+            <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mt-3">Knowledge Base</h3>
+            <p className="text-xs text-slate-500 mt-1">Upload technical documentation, slides, and syllabus material.</p>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

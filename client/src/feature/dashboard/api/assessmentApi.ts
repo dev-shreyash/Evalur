@@ -2,12 +2,32 @@ import api from "@/api/axios";
 
 // --- 1. INTERFACES ---
 
+export interface Cohort {
+  id: number;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  candidateCount?: number;
+}
+
+export interface CreateCohortRequest {
+  name: string;
+  description?: string;
+}
+
+export interface AssignCohortRequest {
+  cohortId: number;
+  userIds: number[];
+}
+
 export interface Assessment {
   id: number;
   title: string;
-  role: string;
-  seniority: string;
+  role?: string;
+  seniority?: string;
   content: string; // JSON string containing MCQs and Coding Tasks
+  status?: string;
+  createdAt?: string;
 }
 
 export interface UserAssessment {
@@ -29,21 +49,28 @@ export interface Candidate {
   name: string;
   email: string;
   userRole: string;
-  seniorityLevel: string;
+  seniorityLevel?: string;
+  cohortId?: number | null;
+  cohortName?: string | null;
   userAssessments: UserAssessment[]; // Handle multiple sessions per candidate
 }
 
 export interface AssessmentRequest {
   title: string;
-  role: string;
-  seniority: string;
+  role?: string;
+  seniority?: string;
   documentIds: string[];
+  topics?: string[];
+  assessmentFocus?: string[];
+  questionTypes?: string[];
+  questionCount?: number;
   jobDescription?: string;
 }
 
 export interface AssignmentRequest {
   assessmentId: number;
-  candidateIds: number[];
+  candidateIds?: number[];
+  cohortId?: number;
 }
 
 export interface SubmissionRequest {
@@ -70,6 +97,28 @@ const assessmentService = {
   getCompleteAssessments: async () => {
     const response = await api.get("/assessments/get-complete-assessments");
     return response.data.data;
+  },
+
+  getDocumentTopics: async (documentIds: string[]): Promise<string[]> => {
+    const response = await api.post("/assessments/topics", { documentIds });
+    return response.data.data?.topics || [];
+  },
+
+  // --- MANAGER: COHORT METHODS ---
+
+  getCohorts: async (): Promise<Cohort[]> => {
+    const response = await api.get("/cohorts");
+    return response.data.data || [];
+  },
+
+  createCohort: async (payload: CreateCohortRequest): Promise<Cohort> => {
+    const response = await api.post("/cohorts", payload);
+    return response.data.data;
+  },
+
+  assignCandidatesToCohort: async (payload: AssignCohortRequest): Promise<void> => {
+    const response = await api.post("/cohorts/assign", payload);
+    return response.data;
   },
 
   // --- MANAGER: CANDIDATE & ASSIGNMENT METHODS ---

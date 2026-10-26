@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.evalur.common.BaseEntity;
+import com.evalur.domain.organization.entity.Cohort;
 import com.evalur.domain.organization.entity.Organization;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -56,6 +57,10 @@ public class User extends BaseEntity implements UserDetails {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = true)
     private Organization organization;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cohort_id", nullable = true)
+    private Cohort cohort;
 
     // ==========================================================
     // Helper Methods for the B2B Multi-Tenant RBAC
@@ -119,6 +124,8 @@ public class User extends BaseEntity implements UserDetails {
     public void setSeniorityLevel(String seniorityLevel) { this.seniorityLevel = seniorityLevel; }
     public Organization getOrganization() { return organization; }
     public void setOrganization(Organization organization) { this.organization = organization; }
+    public Cohort getCohort() { return cohort; }
+    public void setCohort(Cohort cohort) { this.cohort = cohort; }
 
     public static UserBuilder builder() {
         return new UserBuilder();
@@ -132,6 +139,7 @@ public class User extends BaseEntity implements UserDetails {
         private Role role;
         private String seniorityLevel;
         private Organization organization;
+        private Cohort cohort;
 
         public UserBuilder id(Long id) { this.id = id; return this; }
         public UserBuilder name(String name) { this.name = name; return this; }
@@ -140,6 +148,7 @@ public class User extends BaseEntity implements UserDetails {
         public UserBuilder role(Role role) { this.role = role; return this; }
         public UserBuilder seniorityLevel(String seniorityLevel) { this.seniorityLevel = seniorityLevel; return this; }
         public UserBuilder organization(Organization organization) { this.organization = organization; return this; }
+        public UserBuilder cohort(Cohort cohort) { this.cohort = cohort; return this; }
 
         public User build() {
             User user = new User();
@@ -150,6 +159,7 @@ public class User extends BaseEntity implements UserDetails {
             user.role = this.role;
             user.seniorityLevel = this.seniorityLevel;
             user.organization = this.organization;
+            user.cohort = this.cohort;
             return user;
         }
     }

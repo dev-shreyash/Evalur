@@ -195,4 +195,198 @@ public class AiGenerationService {
             }
             """, role, seniority, (jd != null ? jd : "N/A"), (context != null ? context : "N/A"), variation, mcqs, tasks);
     }
+
+    public List<String> extractTopicsFromText(String context) {
+        if (context == null || context.isBlank()) {
+            return java.util.Collections.emptyList();
+        }
+
+        String prompt = String.format("""
+            Act as an educational curriculum analyst. Analyze the following course material and extract a list of 5 to 15 key technical topics, modules, or learning objectives.
+            
+            COURSE MATERIAL:
+            %s
+            
+            RULES:
+            - Return ONLY a raw JSON array of strings, for example: ["Topic A", "Topic B", "Topic C"]
+            - Keep each topic concise (2-6 words), descriptive, and strictly derived from the material.
+            - Do not include introductory text, explanations, or markdown code fences.
+            """, context.length() > 6000 ? context.substring(0, 6000) : context);
+
+        Map<String, Object> requestBody = Map.of(
+                "contents", List.of(Map.of(
+                        "role", "user",
+                        "parts", List.of(Map.of("text", prompt))
+                )),
+                "generationConfig", Map.of(
+                        "temperature", 0.1,
+                        "responseMimeType", "application/json"
+                )
+        );
+
+        try {
+            String response = webClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/" + model + ":generateContent")
+                            .queryParam("key", apiKey)
+                            .build()
+                    )
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(30))
+                    .retryWhen(Retry.backoff(1, Duration.ofSeconds(1)))
+                    .block();
+
+            JsonNode root = objectMapper.readTree(sanitizeJson(extractText(response)));
+            if (root.isArray()) {
+                List<String> topics = new java.util.ArrayList<>();
+                for (JsonNode item : root) {
+                    if (item.isTextual() && !item.asText().isBlank()) {
+                        topics.add(item.asText().trim());
+                    }
+                }
+                return topics;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract topics via AI: {}", e.getMessage());
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    public String generateCourseAssessmentJson(
+            String title,
+            List<String> topics,
+            List<String> focusAreas,
+            List<String> questionTypes,
+            Integer questionCount,
+            String context,
+            int regenerationCount
+    ) {
+        int targetTotal = (questionCount != null && questionCount > 0) ? questionCount : 8;
+        boolean wantsCoding = questionTypes != null && (questionTypes.contains("CODING") || questionTypes.contains("DEBUGGING"));
+        boolean wantsMcq = questionTypes == null || questionTypes.isEmpty() || questionTypes.contains("MCQ");
+
+        int targetCodingTasks = wantsCoding ? (targetTotal >= 8 ? 2 : 1) : 0;
+        int targetMcqs = wantsMcq ? Math.max(1, targetTotal - targetCodingTasks) : 0;
+        if (targetMcqs == 0 && targetCodingTasks == 0) {
+            targetMcqs = targetTotal;
+        }
+
+        double temperature = (regenerationCount == 0) ? 0.2 : 0.4;
+        String prompt = constructCoursePrompt(title, topics, focusAreas, context, regenerationCount, targetMcqs, targetCodingTasks);
+
+        Map<String, Object> requestBody = Map.of(
+                "contents", List.of(Map.of(
+                        "role", "user",
+                        "parts", List.of(Map.of("text", prompt))
+                )),
+                "generationConfig", Map.of(
+                        "temperature", temperature,
+                        "responseMimeType", "application/json"
+                )
+        );
+
+        log.info("Generating Course Assessment: '{}' | {} Topics | {} MCQs | {} Coding | Temp: {}", 
+                 title, (topics != null ? topics.size() : 0), targetMcqs, targetCodingTasks, temperature);
+
+        try {
+            String response = webClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/" + model + ":generateContent")
+                            .queryParam("key", apiKey)
+                            .build()
+                    )
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(60)) 
+                    .retryWhen(Retry.backoff(2, Duration.ofSeconds(2)))
+                    .block();
+
+            JsonNode root = objectMapper.readTree(sanitizeJson(extractText(response)));
+            root = normalize(root, targetMcqs, targetCodingTasks);
+            validateCourseJson(root, targetMcqs, targetCodingTasks);
+
+            return objectMapper.writeValueAsString(root);
+
+        } catch (Exception e) {
+            log.error("Gemini course assessment generation failed for '{}': {}", title, e.getMessage());
+            throw new RuntimeException("Course assessment generation failed", e);
+        }
+    }
+
+    private void validateCourseJson(JsonNode root, int mcqLimit, int codingLimit) {
+        int actualMcqs = root.path("mcqs").isArray() ? root.path("mcqs").size() : 0;
+        int actualCoding = root.path("codingTasks").isArray() ? root.path("codingTasks").size() : 0;
+        if (actualMcqs == 0 && actualCoding == 0) {
+            throw new RuntimeException("Assessment generation produced 0 questions.");
+        }
+    }
+
+    private String constructCoursePrompt(
+            String title,
+            List<String> topics,
+            List<String> focusAreas,
+            String context,
+            int regen,
+            int mcqs,
+            int tasks
+    ) {
+        String variation = (regen > 0) ? "This is a REGENERATION. Focus on different sub-topics and deeper edge cases." : "";
+        String topicsStr = (topics != null && !topics.isEmpty()) ? String.join("\n- ", topics) : "General course concepts";
+        String focusStr = (focusAreas != null && !focusAreas.isEmpty()) ? String.join(", ", focusAreas) : "Conceptual understanding, practical application";
+
+        return String.format("""
+            Act as a Senior Computer Science Instructor and Curriculum Designer.
+            Generate a rigorous, course-aligned technical assessment based on the instructor's uploaded course materials and selected learning objectives.
+
+            ASSESSMENT TITLE: %s
+
+            TARGET LEARNING OBJECTIVES & TOPICS:
+            - %s
+
+            ASSESSMENT FOCUS & PEDAGOGICAL APPROACHES:
+            %s
+
+            COURSE MATERIAL CONTEXT:
+            %s
+
+            %s
+
+            GOAL:
+            Generate EXACTLY %d Multiple Choice Questions (MCQs) and %d Coding/Debugging Tasks.
+
+            STRICT INSTRUCTIONAL RULES:
+            - Ground every question directly in the course material and target learning objectives.
+            - Ensure questions measure student comprehension according to the selected assessment approaches.
+            - For MCQs: provide 4 distinct options, exactly 1 correct index (0-3), and an instructive technical explanation.
+            - For Coding/Debugging: provide a clear problem statement, constraints, starter code template with comments, and full solution rubric.
+            - Assign 'timeEstimateMinutes' for EVERY item based on complexity (MCQ: 1-3 mins, Coding: 15-40 mins).
+            - Provide a 'difficulty' tag (Easy, Medium, Hard).
+            - Return ONLY raw JSON matching the schema below.
+
+            JSON SCHEMA:
+            {
+              "mcqs": [{
+                "question": "",
+                "options": ["", "", "", ""],
+                "correctOptionIndex": 0,
+                "explanation": "",
+                "difficulty": "Medium",
+                "timeEstimateMinutes": 2
+              }],
+              "codingTasks": [{
+                "title": "",
+                "description": "",
+                "constraints": "",
+                "initialCode": "",
+                "solutionTemplate": "",
+                "difficulty": "Hard",
+                "timeEstimateMinutes": 30
+              }]
+            }
+            """, title, topicsStr, focusStr, (context != null && !context.isBlank() ? context : "N/A"), variation, mcqs, tasks);
+    }
+
 }

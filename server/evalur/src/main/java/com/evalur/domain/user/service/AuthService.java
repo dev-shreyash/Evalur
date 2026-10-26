@@ -17,6 +17,8 @@ import com.evalur.domain.user.dto.UserResponse;
 import com.evalur.domain.user.entity.Role;
 import com.evalur.domain.user.entity.User;
 import com.evalur.domain.user.repository.UserRepository;
+import com.evalur.domain.organization.entity.Cohort;
+import com.evalur.domain.organization.repository.CohortRepository;
 import com.evalur.exceptions.BadRequestException;
 import com.evalur.exceptions.DuplicateResourceException;
 import com.evalur.exceptions.InvalidInvitationException;
@@ -31,6 +33,22 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
+    private final CohortRepository cohortRepository;
+
+    public AuthService(
+            UserRepository userRepository,
+            OrganizationRepository organizationRepository,
+            PasswordEncoder passwordEncoder,
+            JwtProvider jwtProvider,
+            AuthenticationManager authenticationManager,
+            CohortRepository cohortRepository) {
+        this.userRepository = userRepository;
+        this.organizationRepository = organizationRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtProvider = jwtProvider;
+        this.authenticationManager = authenticationManager;
+        this.cohortRepository = cohortRepository;
+    }
 
     public AuthService(
             UserRepository userRepository,
@@ -38,11 +56,7 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtProvider jwtProvider,
             AuthenticationManager authenticationManager) {
-        this.userRepository = userRepository;
-        this.organizationRepository = organizationRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtProvider = jwtProvider;
-        this.authenticationManager = authenticationManager;
+        this(userRepository, organizationRepository, passwordEncoder, jwtProvider, authenticationManager, null);
     }
 
     @Transactional
@@ -54,7 +68,8 @@ public class AuthService {
 
         Organization organization;
         Role assignedRole;
-        String assignedSeniority; 
+        String assignedSeniority;
+        Cohort assignedCohort = null; 
 
         // ====================================================================
         // PATH 1 (PRIORITY): Joining via Invite Token
@@ -92,6 +107,11 @@ public class AuthService {
                 throw new InvalidInvitationException("Invalid role in invitation token: " + roleString);
             }
             assignedSeniority = seniorityFromToken; // Force seniority from the secure token
+
+            Long cohortId = jwtProvider.extractCohortId(request.inviteToken());
+            if (cohortId != null && cohortRepository != null) {
+                assignedCohort = cohortRepository.findByIdAndOrganizationId(cohortId, orgId).orElse(null);
+            }
         } 
         // ====================================================================
         // PATH 2: Creating a new Organization (The "Boss" path)
@@ -122,6 +142,7 @@ public class AuthService {
                 .role(assignedRole) 
                 .organization(organization) 
                 .seniorityLevel(assignedSeniority) 
+                .cohort(assignedCohort)
                 .build();
 
         userRepository.save(user);

@@ -27,6 +27,9 @@ public class AiDocument extends BaseEntity {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Column(name = "extracted_topics", columnDefinition = "TEXT")
+    private String extractedTopics;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;
@@ -47,6 +50,8 @@ public class AiDocument extends BaseEntity {
     public void setLlamaJobId(String llamaJobId) { this.llamaJobId = llamaJobId; }
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+    public String getExtractedTopics() { return extractedTopics; }
+    public void setExtractedTopics(String extractedTopics) { this.extractedTopics = extractedTopics; }
     public Organization getOrganization() { return organization; }
     public void setOrganization(Organization organization) { this.organization = organization; }
 
@@ -60,6 +65,7 @@ public class AiDocument extends BaseEntity {
         private IngestionStatus status;
         private String llamaJobId;
         private String errorMessage;
+        private String extractedTopics;
         private Organization organization;
 
         public AiDocumentBuilder id(Long id) { this.id = id; return this; }
@@ -67,6 +73,7 @@ public class AiDocument extends BaseEntity {
         public AiDocumentBuilder status(IngestionStatus status) { this.status = status; return this; }
         public AiDocumentBuilder llamaJobId(String llamaJobId) { this.llamaJobId = llamaJobId; return this; }
         public AiDocumentBuilder errorMessage(String errorMessage) { this.errorMessage = errorMessage; return this; }
+        public AiDocumentBuilder extractedTopics(String extractedTopics) { this.extractedTopics = extractedTopics; return this; }
         public AiDocumentBuilder organization(Organization organization) { this.organization = organization; return this; }
 
         public AiDocument build() {
@@ -76,6 +83,7 @@ public class AiDocument extends BaseEntity {
             doc.status = this.status;
             doc.llamaJobId = this.llamaJobId;
             doc.errorMessage = this.errorMessage;
+            doc.extractedTopics = this.extractedTopics;
             doc.organization = this.organization;
             return doc;
         }

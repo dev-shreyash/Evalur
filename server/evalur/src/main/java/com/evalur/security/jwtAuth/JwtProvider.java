@@ -89,14 +89,17 @@ public class JwtProvider {
     // B2B SAAS LOGIC (Multi-Tenancy)
     // ========================================================================
 
-    public String generateInviteToken(Long orgId, String orgName, String role, String seniority, String email) {
+    public String generateInviteToken(Long orgId, String orgName, String role, String seniority, String email, Long cohortId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("orgId", orgId);
         claims.put("orgName", orgName);
         claims.put("role", role);
-        claims.put("seniority", seniority);
+        claims.put("seniority", (seniority != null && !seniority.isBlank()) ? seniority : "Candidate");
         if (email != null && !email.isBlank()) {
             claims.put("email", email.trim().toLowerCase());
+        }
+        if (cohortId != null) {
+            claims.put("cohortId", cohortId);
         }
         
         return Jwts.builder()
@@ -107,6 +110,10 @@ public class JwtProvider {
                 .setExpiration(new Date(System.currentTimeMillis() + 604800000)) 
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String generateInviteToken(Long orgId, String orgName, String role, String seniority, String email) {
+        return generateInviteToken(orgId, orgName, role, seniority, email, null);
     }
 
     public String generateInviteToken(Long orgId, String orgName, String role, String seniority) {
@@ -141,5 +148,11 @@ public class JwtProvider {
 
     public String extractInviteEmail(String token) {
         return extractClaim(token, claims -> claims.get("email", String.class));
+    }
+
+    public Long extractCohortId(String token) {
+        Object cohortId = extractAllClaims(token).get("cohortId");
+        if (cohortId == null) return null;
+        return Long.valueOf(cohortId.toString());
     }
 }

@@ -68,10 +68,10 @@ export default function AssessmentResultPage() {
       {/* Header Section */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Assessment Findings</h1>
-          <p className="text-slate-500 mt-1">Detailed evaluation for session #{result.id}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Assessment Findings</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Detailed evaluation for session #{result.id}</p>
         </div>
-        <Button onClick={handleDownload} variant="outline" className="shadow-sm border-slate-200 text-slate-700 hover:bg-slate-50">
+        <Button onClick={handleDownload} variant="outline" className="shadow-sm border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
           <FileDown className="mr-2 h-4 w-4" /> Export PDF
         </Button>
       </div>
@@ -80,29 +80,29 @@ export default function AssessmentResultPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Metric 1: Objective Score */}
-        <Card className="flex flex-col items-center justify-center p-6 border-slate-200 shadow-sm">
+        <Card className="flex flex-col items-center justify-center p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
             Overall Score
           </span>
-          <div className="text-7xl font-black mt-2 text-slate-900">
+          <div className="text-7xl font-black mt-2 text-slate-900 dark:text-slate-100">
             {result.objectiveScore || 0}%
           </div>
-          <p className="text-xs text-slate-500 mt-4 text-center px-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 text-center px-4">
             Historical scores may include a legacy code-length heuristic and may not be directly comparable with scores calculated under the current scoring formula.
           </p>
         </Card>
 
         {/* Metric 2: Logic DNA Radar Chart */}
-       <Card className="md:col-span-2 overflow-hidden flex flex-col p-6 border-slate-200 shadow-sm min-h-[350px]">
+       <Card className="md:col-span-2 overflow-hidden flex flex-col p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm min-h-[350px]">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
-            Logic DNA Profile
+            Logic Profile
           </span>
           <div className="flex-1 w-full h-full min-h-[250px]">
             {parsedDna ? (
               <LogicRadarChart dnaString={result.logicDna} parsedData={parsedDna} />
             ) : (
               <div className="h-full flex items-center justify-center">
-                <p className="text-slate-400 italic text-sm">No valid Logic DNA available to chart.</p>
+                <p className="text-slate-400 italic text-sm">No valid Logic profile available to chart.</p>
               </div>
             )}
           </div>
@@ -110,12 +110,12 @@ export default function AssessmentResultPage() {
       </div>
 
       {/* AI Qualitative Feedback Card */}
-      <Card className="bg-[#0f172a] text-slate-50 border-none shadow-lg">
+      <Card className="bg-slate-900 dark:bg-slate-950 text-slate-50 border border-slate-800 shadow-lg">
         <CardContent className="pt-8 pb-8 px-8">
           <div className="flex items-center gap-2 mb-6 text-slate-300">
-            <Sparkles className="h-5 w-5" />
+            <Sparkles className="h-5 w-5 text-blue-400" />
             <span className="font-bold uppercase text-xs tracking-widest">
-              AI Logic Consultant Analysis
+              AI Evaluation Analysis
             </span>
           </div>
           <blockquote className="text-lg leading-relaxed font-medium text-slate-200">
