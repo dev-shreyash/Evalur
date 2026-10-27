@@ -60,6 +60,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 // Explicit public authentication routes
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                // Explicit public health check routes
+                .requestMatchers(
+                        HttpMethod.GET,
+                        "/health/ping",
+                        "/api/v1/health/ping",
+                        "/health",
+                        "/api/v1/health",
+                        "/health/**",
+                        "/api/v1/health/**"
+                ).permitAll()
                 // Explicit public documentation and system routes
                 .requestMatchers(
                         "/v3/api-docs/**",

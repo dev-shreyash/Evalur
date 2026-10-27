@@ -1,0 +1,39 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "headers": [
+    {
+      "source": "/health/ping",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
+    {
+      "source": "/api/health/ping",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/health/ping",
+      "destination": "/api/health/ping"
+    },
+    {
+      "source": "/health/ping/",
+      "destination": "/api/health/ping"
+    },
+    {
+      "source": "/api/v1/health/ping",
+      "destination": "/api/health/ping"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+

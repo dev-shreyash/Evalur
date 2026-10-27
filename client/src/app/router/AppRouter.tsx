@@ -15,6 +15,7 @@ import AssessmentPlayer from '@/feature/dashboard/pages/candidatePages/Assessmen
 import AssessmentResult from '@/feature/dashboard/pages/candidatePages/AssessmentResult';
 
 import UnauthorizedPage from '@/common/pages/UnauthorizedPage';
+import HealthPingPage from '@/common/pages/HealthPingPage';
 import RoleRedirect from './RoleRedirect';
 import ViewAssessmentPage from '@/feature/dashboard/pages/AdminPages/ViewAssessmentPage';
 import AssessmentResultPage from '@/feature/dashboard/pages/AdminPages/AssessmentResultPage';
@@ -79,6 +80,9 @@ export const AppRouter = () => {
           <Route path="/assessment/:id" element={<AssessmentPlayer />} />
         </Route>
       </Route>
+
+      {/* HEALTH CHECK (Public for cron jobs & monitors) */}
+      <Route path="/health/ping" element={<HealthPingPage />} />
 
       {/* CATCH ALL / UNAUTHORIZED */}
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
