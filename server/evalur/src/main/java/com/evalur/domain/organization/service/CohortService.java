@@ -99,11 +99,12 @@ public class CohortService {
                     .orElseThrow(() -> new ResourceNotFoundException("Cohort", "id", request.cohortId()));
         }
 
-        if (request.candidateIds() == null || request.candidateIds().isEmpty()) {
+        List<Long> candidateIds = request.getEffectiveCandidateIds();
+        if (candidateIds.isEmpty()) {
             return;
         }
 
-        for (Long candidateId : request.candidateIds()) {
+        for (Long candidateId : candidateIds) {
             User candidate = userRepository.findById(candidateId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", candidateId));
 
@@ -118,6 +119,118 @@ public class CohortService {
             candidate.setCohort(cohort);
             userRepository.save(candidate);
         }
+    }
+
+    @Transactional
+    public CohortResponse updateCohort(Long cohortId, CohortRequest request, Long orgId) {
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+
+        Cohort cohort = cohortRepository.findByIdAndOrganizationId(cohortId, orgId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cohort", "id", cohortId));
+
+        String trimmedName = request.name().trim();
+        if (trimmedName.isEmpty()) {
+            throw new IllegalArgumentException("Cohort name cannot be blank.");
+        }
+
+        if (cohortRepository.existsByOrganizationIdAndNameIgnoreCaseAndIdNot(orgId, trimmedName, cohortId)) {
+            throw new DuplicateResourceException("A cohort with the name '" + trimmedName + "' already exists in this organization.");
+        }
+
+        cohort.setName(trimmedName);
+        cohort.setDescription(request.description() != null ? request.description().trim() : null);
+
+        cohort = cohortRepository.save(cohort);
+        int memberCount = userRepository.countByCohortId(cohort.getId());
+        return new CohortResponse(cohort.getId(), cohort.getName(), cohort.getDescription(), memberCount, cohort.getCreatedAt());
+    }
+
+    @Transactional
+    public void syncCohortMembers(Long cohortId, List<Long> desiredCandidateIds, Long orgId) {
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+
+        Cohort cohort = cohortRepository.findByIdAndOrganizationId(cohortId, orgId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cohort", "id", cohortId));
+
+        List<Long> targetIds = desiredCandidateIds != null ? desiredCandidateIds : List.of();
+
+        // 1. Unassign currently enrolled candidates who are no longer in desiredCandidateIds
+        List<User> currentMembers = userRepository.findByOrganizationIdAndCohortId(orgId, cohortId);
+        for (User member : currentMembers) {
+            if (!targetIds.contains(member.getId())) {
+                member.setCohort(null);
+                userRepository.save(member);
+            }
+        }
+
+        // 2. Assign newly selected candidates to this cohort
+        for (Long candidateId : targetIds) {
+            User candidate = userRepository.findById(candidateId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", candidateId));
+
+            if (candidate.getOrganization() == null || !candidate.getOrganization().getId().equals(orgId)) {
+                throw new AccessDeniedException("Candidate " + candidateId + " does not belong to caller's organization.");
+            }
+
+            if (candidate.getRole() != Role.CANDIDATE) {
+                throw new AccessDeniedException("User " + candidateId + " is not a candidate.");
+            }
+
+            candidate.setCohort(cohort);
+            userRepository.save(candidate);
+        }
+    }
+
+    @Transactional
+    public void removeCandidateFromCohort(Long cohortId, Long candidateId, Long orgId) {
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+
+        User candidate = userRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", candidateId));
+
+        if (candidate.getOrganization() == null || !candidate.getOrganization().getId().equals(orgId)) {
+            throw new AccessDeniedException("Candidate " + candidateId + " does not belong to caller's organization.");
+        }
+
+        if (candidate.getRole() != Role.CANDIDATE) {
+            throw new AccessDeniedException("User " + candidateId + " is not a candidate.");
+        }
+
+        if (cohortId != null && (candidate.getCohort() == null || !candidate.getCohort().getId().equals(cohortId))) {
+            throw new ResourceNotFoundException("Cohort", "candidateCohortId", candidate.getCohort() != null ? candidate.getCohort().getId() : null);
+        }
+
+        candidate.setCohort(null);
+        userRepository.save(candidate);
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.evalur.domain.organization.dto.MemberResponse> getCohortMembers(Long cohortId, Long orgId) {
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+
+        Cohort cohort = cohortRepository.findByIdAndOrganizationId(cohortId, orgId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cohort", "id", cohortId));
+
+        return userRepository.findByOrganizationIdAndCohortId(orgId, cohort.getId()).stream()
+                .map(u -> new com.evalur.domain.organization.dto.MemberResponse(
+                        u.getId(),
+                        u.getName(),
+                        u.getEmail(),
+                        u.getRole(),
+                        u.getSeniorityLevel(),
+                        List.of(),
+                        cohort.getId(),
+                        cohort.getName()
+                ))
+                .toList();
     }
 }
 

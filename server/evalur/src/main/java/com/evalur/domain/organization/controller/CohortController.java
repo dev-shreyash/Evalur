@@ -6,9 +6,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +19,7 @@ import com.evalur.common.ApiResponse;
 import com.evalur.domain.organization.dto.AssignCohortRequest;
 import com.evalur.domain.organization.dto.CohortRequest;
 import com.evalur.domain.organization.dto.CohortResponse;
+import com.evalur.domain.organization.dto.MemberResponse;
 import com.evalur.domain.organization.service.CohortService;
 import com.evalur.security.utils.SecurityUtils;
 
@@ -63,6 +66,29 @@ public class CohortController {
         return ResponseEntity.ok(ApiResponse.success(cohortService.getCohortById(id, orgId), "Cohort retrieved."));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<CohortResponse>> updateCohort(
+            @PathVariable Long id,
+            @Valid @RequestBody CohortRequest request) {
+        Long orgId = SecurityUtils.getCurrentOrgId();
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+        CohortResponse cohort = cohortService.updateCohort(id, request, orgId);
+        return ResponseEntity.ok(ApiResponse.success(cohort, "Cohort updated successfully."));
+    }
+
+    @GetMapping("/{id}/members")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<List<MemberResponse>>> getCohortMembers(@PathVariable Long id) {
+        Long orgId = SecurityUtils.getCurrentOrgId();
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+        return ResponseEntity.ok(ApiResponse.success(cohortService.getCohortMembers(id, orgId), "Cohort members retrieved."));
+    }
+
     @PostMapping("/assign")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<Void>> assignCandidatesToCohort(@RequestBody AssignCohortRequest request) {
@@ -72,6 +98,43 @@ public class CohortController {
         }
         cohortService.assignCandidatesToCohort(request, orgId);
         return ResponseEntity.ok(ApiResponse.success(null, "Candidates assigned to cohort successfully."));
+    }
+
+    @PutMapping("/{id}/members")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> syncCohortMembers(
+            @PathVariable Long id,
+            @RequestBody AssignCohortRequest request) {
+        Long orgId = SecurityUtils.getCurrentOrgId();
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+        cohortService.syncCohortMembers(id, request.getEffectiveCandidateIds(), orgId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Cohort membership synced successfully."));
+    }
+
+    @DeleteMapping("/{cohortId}/members/{candidateId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> removeCandidateFromCohort(
+            @PathVariable Long cohortId,
+            @PathVariable Long candidateId) {
+        Long orgId = SecurityUtils.getCurrentOrgId();
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+        cohortService.removeCandidateFromCohort(cohortId, candidateId, orgId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Candidate removed from cohort successfully."));
+    }
+
+    @DeleteMapping("/members/{candidateId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> removeCandidate(@PathVariable Long candidateId) {
+        Long orgId = SecurityUtils.getCurrentOrgId();
+        if (orgId == null) {
+            throw new AccessDeniedException("User does not belong to a valid organization.");
+        }
+        cohortService.removeCandidateFromCohort(null, candidateId, orgId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Candidate unassigned from cohort successfully."));
     }
 }
 

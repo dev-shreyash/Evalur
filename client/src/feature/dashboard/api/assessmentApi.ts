@@ -15,9 +15,15 @@ export interface CreateCohortRequest {
   description?: string;
 }
 
+export interface UpdateCohortRequest {
+  name: string;
+  description?: string;
+}
+
 export interface AssignCohortRequest {
-  cohortId: number;
-  userIds: number[];
+  cohortId?: number | null;
+  userIds?: number[];
+  candidateIds?: number[];
 }
 
 export interface Assessment {
@@ -111,14 +117,50 @@ const assessmentService = {
     return response.data.data || [];
   },
 
+  getCohortById: async (id: number): Promise<Cohort> => {
+    const response = await api.get(`/cohorts/${id}`);
+    return response.data.data;
+  },
+
+  getCohortMembers: async (id: number): Promise<Candidate[]> => {
+    const response = await api.get(`/cohorts/${id}/members`);
+    return response.data.data || [];
+  },
+
   createCohort: async (payload: CreateCohortRequest): Promise<Cohort> => {
     const response = await api.post("/cohorts", payload);
     return response.data.data;
   },
 
+  updateCohort: async (id: number, payload: UpdateCohortRequest): Promise<Cohort> => {
+    const response = await api.put(`/cohorts/${id}`, payload);
+    return response.data.data;
+  },
+
   assignCandidatesToCohort: async (payload: AssignCohortRequest): Promise<void> => {
-    const response = await api.post("/cohorts/assign", payload);
+    const candidateIds = payload.candidateIds || payload.userIds || [];
+    const response = await api.post("/cohorts/assign", {
+      cohortId: payload.cohortId ?? null,
+      candidateIds,
+      userIds: candidateIds,
+    });
     return response.data;
+  },
+
+  syncCohortMembers: async (cohortId: number, candidateIds: number[]): Promise<void> => {
+    const response = await api.put(`/cohorts/${cohortId}/members`, {
+      candidateIds,
+      userIds: candidateIds,
+    });
+    return response.data;
+  },
+
+  removeCandidateFromCohort: async (candidateId: number, cohortId?: number): Promise<void> => {
+    if (cohortId) {
+      await api.delete(`/cohorts/${cohortId}/members/${candidateId}`);
+    } else {
+      await api.delete(`/cohorts/members/${candidateId}`);
+    }
   },
 
   // --- MANAGER: CANDIDATE & ASSIGNMENT METHODS ---

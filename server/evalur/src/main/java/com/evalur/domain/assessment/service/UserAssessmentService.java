@@ -3,6 +3,8 @@ package com.evalur.domain.assessment.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ public class UserAssessmentService {
     private final ObjectMapper objectMapper;
     private final CohortRepository cohortRepository;
 
+    @Autowired
     public UserAssessmentService(
             UserAssessmentRepository userAssessmentRepository,
             AssessmentRepository assessmentRepository,

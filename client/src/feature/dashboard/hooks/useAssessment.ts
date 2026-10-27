@@ -6,6 +6,7 @@ import type {
   AssignmentRequest,
   SubmissionRequest,
   CreateCohortRequest,
+  UpdateCohortRequest,
   AssignCohortRequest
 } from "@/feature/dashboard/api/assessmentApi"; 
 
@@ -96,6 +97,22 @@ export const useCohorts = () => {
   });
 };
 
+export const useCohortDetails = (id: number | null) => {
+  return useQuery({
+    queryKey: ["cohort", id],
+    queryFn: () => assessmentService.getCohortById(id!),
+    enabled: !!id,
+  });
+};
+
+export const useCohortMembers = (id: number | null) => {
+  return useQuery({
+    queryKey: ["cohort-members", id],
+    queryFn: () => assessmentService.getCohortMembers(id!),
+    enabled: !!id,
+  });
+};
+
 /** 
  * MUTATIONS (Actions)
  */
@@ -157,9 +174,27 @@ export const useCreateCohort = () => {
     onSuccess: () => {
       toast.success("Cohort created successfully!");
       queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message || "Failed to create cohort.");
+    },
+  });
+};
+
+export const useUpdateCohort = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateCohortRequest }) =>
+      assessmentService.updateCohort(id, payload),
+    onSuccess: () => {
+      toast.success("Cohort updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || "Failed to update cohort.");
     },
   });
 };
@@ -170,12 +205,46 @@ export const useAssignCandidatesToCohort = () => {
   return useMutation({
     mutationFn: (payload: AssignCohortRequest) => assessmentService.assignCandidatesToCohort(payload),
     onSuccess: () => {
-      toast.success("Candidates assigned to cohort!");
+      toast.success("Cohort membership updated!");
       queryClient.invalidateQueries({ queryKey: ["cohorts"] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Failed to assign candidates to cohort.");
+      toast.error(err?.response?.data?.message || "Failed to update cohort membership.");
+    },
+  });
+};
+
+export const useSyncCohortMembers = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ cohortId, candidateIds }: { cohortId: number; candidateIds: number[] }) =>
+      assessmentService.syncCohortMembers(cohortId, candidateIds),
+    onSuccess: () => {
+      toast.success("Cohort members updated!");
+      queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || "Failed to sync cohort members.");
+    },
+  });
+};
+
+export const useRemoveCandidateFromCohort = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ candidateId, cohortId }: { candidateId: number; cohortId?: number }) =>
+      assessmentService.removeCandidateFromCohort(candidateId, cohortId),
+    onSuccess: () => {
+      toast.success("Candidate unassigned from cohort!");
+      queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || "Failed to unassign candidate.");
     },
   });
 };

@@ -1,5 +1,6 @@
 package com.evalur.domain.user.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -35,6 +36,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final CohortRepository cohortRepository;
 
+    @Autowired
     public AuthService(
             UserRepository userRepository,
             OrganizationRepository organizationRepository,

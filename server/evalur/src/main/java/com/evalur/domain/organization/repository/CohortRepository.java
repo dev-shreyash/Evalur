@@ -13,5 +13,6 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
     List<Cohort> findByOrganizationIdOrderByNameAsc(Long organizationId);
     Optional<Cohort> findByIdAndOrganizationId(Long id, Long organizationId);
     boolean existsByOrganizationIdAndNameIgnoreCase(Long organizationId, String name);
+    boolean existsByOrganizationIdAndNameIgnoreCaseAndIdNot(Long organizationId, String name, Long id);
 }
 

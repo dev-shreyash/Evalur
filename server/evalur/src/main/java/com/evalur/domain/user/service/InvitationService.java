@@ -2,6 +2,7 @@ package com.evalur.domain.user.service;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class InvitationService {
     private final UserRepository userRepository;
     private final CohortRepository cohortRepository;
 
+    @Autowired
     public InvitationService(JwtProvider jwtProvider, UserRepository userRepository, CohortRepository cohortRepository) {
         this.jwtProvider = jwtProvider;
         this.userRepository = userRepository;

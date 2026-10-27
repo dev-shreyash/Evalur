@@ -143,5 +143,79 @@ class CohortServiceTest {
         AssignCohortRequest req = new AssignCohortRequest(10L, List.of(5L));
         assertThrows(AccessDeniedException.class, () -> cohortService.assignCandidatesToCohort(req, 100L));
     }
+
+    @Test
+    @DisplayName("Update cohort details successfully")
+    void updateCohort_succeeds() {
+        when(cohortRepository.findByIdAndOrganizationId(10L, 100L)).thenReturn(Optional.of(cohort1));
+        when(cohortRepository.existsByOrganizationIdAndNameIgnoreCaseAndIdNot(100L, "Advanced Java 2026", 10L)).thenReturn(false);
+        when(cohortRepository.save(any(Cohort.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.countByCohortId(10L)).thenReturn(15);
+
+        CohortRequest req = new CohortRequest("Advanced Java 2026", "Updated description");
+        CohortResponse res = cohortService.updateCohort(10L, req, 100L);
+
+        assertNotNull(res);
+        assertEquals("Advanced Java 2026", res.name());
+        assertEquals("Updated description", res.description());
+        assertEquals(15, res.memberCount());
+    }
+
+    @Test
+    @DisplayName("Update cohort with duplicate name in same org throws DuplicateResourceException")
+    void updateCohort_duplicateName_throwsException() {
+        when(cohortRepository.findByIdAndOrganizationId(10L, 100L)).thenReturn(Optional.of(cohort1));
+        when(cohortRepository.existsByOrganizationIdAndNameIgnoreCaseAndIdNot(100L, "Existing Cohort", 10L)).thenReturn(true);
+
+        CohortRequest req = new CohortRequest("Existing Cohort", "Desc");
+        assertThrows(DuplicateResourceException.class, () -> cohortService.updateCohort(10L, req, 100L));
+    }
+
+    @Test
+    @DisplayName("Sync cohort members adds new and removes unselected")
+    void syncCohortMembers_addsAndRemoves() {
+        User cand1 = User.builder().id(1L).name("Alice").role(Role.CANDIDATE).organization(org1).cohort(cohort1).build();
+        User cand2 = User.builder().id(2L).name("Bob").role(Role.CANDIDATE).organization(org1).cohort(cohort1).build();
+        User cand3 = User.builder().id(3L).name("Charlie").role(Role.CANDIDATE).organization(org1).build();
+
+        when(cohortRepository.findByIdAndOrganizationId(10L, 100L)).thenReturn(Optional.of(cohort1));
+        when(userRepository.findByOrganizationIdAndCohortId(100L, 10L)).thenReturn(List.of(cand1, cand2));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(cand1));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(cand3));
+
+        // Keep 1, remove 2, add 3
+        cohortService.syncCohortMembers(10L, List.of(1L, 3L), 100L);
+
+        assertEquals(cohort1, cand1.getCohort());
+        assertEquals(null, cand2.getCohort());
+        assertEquals(cohort1, cand3.getCohort());
+        verify(userRepository).save(cand2);
+        verify(userRepository).save(cand3);
+    }
+
+    @Test
+    @DisplayName("Remove candidate from cohort leaves candidate account intact with null cohort")
+    void removeCandidateFromCohort_succeeds() {
+        User cand = User.builder().id(1L).name("Alice").role(Role.CANDIDATE).organization(org1).cohort(cohort1).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(cand));
+
+        cohortService.removeCandidateFromCohort(10L, 1L, 100L);
+
+        assertEquals(null, cand.getCohort());
+        assertEquals("Alice", cand.getName());
+        assertEquals(org1, cand.getOrganization());
+        verify(userRepository).save(cand);
+    }
+
+    @Test
+    @DisplayName("Remove candidate from cohort rejects cross-organization request")
+    void removeCandidateFromCohort_crossOrg_throwsAccessDenied() {
+        User rivalCand = User.builder().id(99L).name("Eve").role(Role.CANDIDATE).organization(org2).build();
+
+        when(userRepository.findById(99L)).thenReturn(Optional.of(rivalCand));
+
+        assertThrows(AccessDeniedException.class, () -> cohortService.removeCandidateFromCohort(10L, 99L, 100L));
+    }
 }
 
